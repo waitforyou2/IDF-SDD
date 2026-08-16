@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "idf-sdd",
+  "description": "智能数据底座开发组统一的、归档驱动的软件设计与交付工作流。",
+  "owner": {
+    "name": "智能数据底座开发组"
+  },
+  "plugins": [
+    {
+      "name": "sdd",
+      "version": "1.2.0",
+      "source": "./plugins/sdd",
+      "description": "融合社区实践的六阶段 SDD 工作流，提供 CodeGraph 分析、决策归档、测试优先实现、双轴审查和交付证据。",
+      "keywords": [
+        "sdd",
+        "software-development",
+        "requirements",
+        "planning",
+        "verification",
+        "codegraph"
+      ]
+    }
+  ]
+}

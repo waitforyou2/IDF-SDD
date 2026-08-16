@@ -1,0 +1,15 @@
+{
+  "name": "sdd",
+  "version": "1.2.0",
+  "description": "融合社区工程实践、由归档驱动并使用 CodeGraph 辅助理解仓库的软件设计与交付工作流。",
+  "author": {
+    "name": "智能数据底座开发组"
+  },
+  "keywords": [
+    "sdd",
+    "engineering-workflow",
+    "codegraph",
+    "requirements",
+    "verification"
+  ]
+}
