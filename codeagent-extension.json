@@ -1,6 +1,6 @@
 {
   "name": "idf-sdd",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "智能数据底座开发组统一的、归档驱动的软件设计与交付工作流。",
   "mcpServers": {
     "codegraph": {
