@@ -1,0 +1,12 @@
+# 打包产物
+*.zip
+
+# 临时文件
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
