@@ -182,7 +182,7 @@ function isoNow() {
 }
 
 function sddDirectory(root) {
-  return path.join(root, '.sdd');
+  return path.join(root, 'docs', 'isdd');
 }
 
 function changeDirectory(root, id) {
@@ -349,7 +349,7 @@ function renderRepositoryYaml(root, detection, codegraphEnabled) {
   const commandLines = Object.entries(detection.commands)
     .map(([key, value]) => `  ${key}: ${yamlScalar(value)}`)
     .join('\n');
-  return `workflow_version: ${yamlScalar(WORKFLOW_VERSION)}\ninitialized_at: ${yamlScalar(isoNow())}\nrepository_root: "."\ntechnologies:\n${detection.technologies.length ? detection.technologies.map((item) => `  - ${yamlScalar(item)}`).join('\n') : '  - "unknown"'}\ncommands:\n${commandLines}\ncodegraph:\n  provider: "colbymchenry/codegraph"\n  minimum_version: ${yamlScalar(CODEGRAPH_MIN_VERSION)}\n  enabled: ${codegraphEnabled ? 'true' : 'false'}\n  index_directory: ".codegraph"\n  auto_sync: true\npolicy:\n  file: ".sdd/policy.md"\n  default_mode: "standard"\n  require_human_delivery: true\nartifacts:\n  directory: ".sdd/changes"\n  commit_with_code: true\n`;
+  return `workflow_version: ${yamlScalar(WORKFLOW_VERSION)}\ninitialized_at: ${yamlScalar(isoNow())}\nrepository_root: "."\ntechnologies:\n${detection.technologies.length ? detection.technologies.map((item) => `  - ${yamlScalar(item)}`).join('\n') : '  - "unknown"'}\ncommands:\n${commandLines}\ncodegraph:\n  provider: "colbymchenry/codegraph"\n  minimum_version: ${yamlScalar(CODEGRAPH_MIN_VERSION)}\n  enabled: ${codegraphEnabled ? 'true' : 'false'}\n  index_directory: ".codegraph"\n  auto_sync: true\npolicy:\n  file: "docs/isdd/policy.md"\n  default_mode: "standard"\n  require_human_delivery: true\nartifacts:\n  directory: "docs/isdd/changes"\n  commit_with_code: true\n`;
 }
 
 function ensureGitignore(root) {
@@ -401,7 +401,7 @@ function initRepository(root, flags) {
     detected: detection,
     gitignore_changed: gitignoreChanged,
     artifacts: [configFile, repositoryFile, policyFile],
-    next: '请根据已核验的 CodeGraph 和仓库证据完善 .sdd/repository.md，然后执行 validate --repo。'
+    next: '请根据已核验的 CodeGraph 和仓库证据完善 docs/isdd/repository.md，然后执行 validate --repo。'
   });
 }
 
@@ -505,7 +505,7 @@ function normalizedGitPath(file) {
 
 function excludedFingerprintPath(file) {
   const normalized = normalizedGitPath(file);
-  return normalized === '.sdd' || normalized.startsWith('.sdd/') || normalized === '.codegraph' || normalized.startsWith('.codegraph/');
+  return normalized === 'docs/isdd' || normalized.startsWith('docs/isdd/') || normalized === '.codegraph' || normalized.startsWith('.codegraph/');
 }
 
 function gitLines(root, args) {
@@ -669,7 +669,7 @@ function validateRepository(root) {
   const errors = [];
   const directory = sddDirectory(root);
   for (const name of ['repository.yaml', 'repository.md', 'policy.md']) {
-    if (!fs.existsSync(path.join(directory, name))) errors.push(`缺少仓库级交付件：.sdd/${name}`);
+    if (!fs.existsSync(path.join(directory, name))) errors.push(`缺少仓库级交付件：docs/isdd/${name}`);
   }
   const repositoryFile = path.join(directory, 'repository.md');
   if (fs.existsSync(repositoryFile)) {

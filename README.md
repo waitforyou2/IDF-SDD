@@ -4,7 +4,7 @@ IDF-SDD 是智能数据底座开发组统一使用的 AI 软件设计与交付�
 
 > 让智能数据底座的每一次变更，都有设计、有证据、有传承。
 
-每项变更都会在代码仓库中留下可持续维护的 `.sdd/` 记录，说明需求是什么、为什么选择当前设计、最终实现如何偏离原计划，以及通过什么证据确认完成。
+每项变更都会在代码仓库中留下可持续维护的 `docs/isdd/` 记录，说明需求是什么、为什么选择当前设计、最终实现如何偏离原计划，以及通过什么证据确认完成。
 
 ## 社区能力来源
 
@@ -32,7 +32,7 @@ IDF-SDD 有意保留以下差异：
 - 包括 `lite` 在内的每项变更都保留精简的需求和计划，简单模式只降低深度，不取消追溯。
 - 计划必须包含精确路径、符号、测试 seam 和证据，但不预写容易过期的完整实现代码。
 - `build` 不自动提交；commit、push、创建 PR、merge 和 deploy 始终是独立授权动作。
-- CodeGraph 影响分析、内容指纹和随代码提交的 `.sdd/` 归档属于 IDF-SDD 的集成设计。
+- CodeGraph 影响分析、内容指纹和随代码提交的 `docs/isdd/` 归档属于 IDF-SDD 的集成设计。
 
 版权和许可信息见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 
@@ -81,7 +81,7 @@ npm install -g @colbymchenry/codegraph@1.5.0
 插件将以下文件与业务代码一起保存：
 
 ```text
-.sdd/
+docs/isdd/
 |-- repository.yaml
 |-- repository.md
 |-- policy.md

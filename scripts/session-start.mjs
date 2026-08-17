@@ -30,7 +30,7 @@ function frontmatter(file) {
 
 const input = await readInput();
 const root = path.resolve(input.cwd || process.env.CLAUDE_PROJECT_DIR || process.cwd());
-const sdd = path.join(root, '.sdd');
+const sdd = path.join(root, 'docs', 'isdd');
 if (!fs.existsSync(path.join(sdd, 'repository.yaml'))) process.exit(0);
 
 const changesDirectory = path.join(sdd, 'changes');
@@ -52,7 +52,7 @@ const summary = [
   '当前仓库使用 IDF-SDD 工作流。',
   `CodeGraph 索引：${graphReady ? '已存在' : '缺失；进行结构性代码工作前请执行 /isdd-init'}。`,
   active.length ? `进行中的变更：${active.join(', ')}。` : '当前没有进行中的 SDD 变更。',
-  '推进阶段前先阅读 .sdd/policy.md。结构性代码问题优先使用 CodeGraph，再使用 grep 或逐文件读取。无法确定当前变更时执行 /isdd-status。'
+  '推进阶段前先阅读 docs/isdd/policy.md。结构性代码问题优先使用 CodeGraph，再使用 grep 或逐文件读取。无法确定当前变更时执行 /isdd-status。'
 ].join(' ');
 
 process.stdout.write(JSON.stringify({

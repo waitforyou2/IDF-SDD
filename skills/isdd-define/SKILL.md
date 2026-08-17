@@ -13,14 +13,14 @@ description: 定义或修订一项 IDF-SDD 变更，将问题、范围、非目�
 
 ## 执行流程
 
-1. 要求仓库已初始化。阅读 `.sdd/policy.md`、`.sdd/repository.md`、[工作流契约](../../references/workflow.md)、[模式规范](../../references/modes.md)和[归档契约](../../references/artifacts.md)。
+1. 要求仓库已初始化。阅读 `docs/isdd/policy.md`、`docs/isdd/repository.md`、[工作流契约](../../references/workflow.md)、[模式规范](../../references/modes.md)和[归档契约](../../references/artifacts.md)。
 2. 如果参数指向已有的 `DRAFT` 变更，继续使用该记录；否则对原始需求分类：
 
    ```bash
    node "${CODEAGENT3_PLUGIN_ROOT}/scripts/sdd.mjs" classify --text "<需求>" --root "${CLAUDE_PROJECT_DIR}"
    ```
 
-3. 阅读 `.sdd/repository.md` 中的统一术语和相关历史决策。使用一次 `codegraph_explore` 定位业务能力、可能影响的模块、已有测试 seam 和大致影响范围。此阶段不得设计技术方案。图谱证据与 lite 判断冲突时，升级模式。
+3. 阅读 `docs/isdd/repository.md` 中的统一术语和相关历史决策。使用一次 `codegraph_explore` 定位业务能力、可能影响的模块、已有测试 seam 和大致影响范围。此阶段不得设计技术方案。图谱证据与 lite 判断冲突时，升级模式。
 4. 在详细提问前检查需求范围。如果一个请求包含多个可独立验收的能力，先给出小型能力地图，包含稳定 id、职责、依赖和构建顺序；确认后，再为每个能力建立独立变更。
 5. 显式列出会影响结果的重要假设。只询问会改变行为、范围、验收、术语或风险的问题。清晰的 lite 需求无需提问；standard 每批最多三个问题，strict 每批最多五个问题。仓库证据已经回答的问题，不得再次进行形式化访谈。
 6. 必要时创建变更记录：
@@ -29,7 +29,7 @@ description: 定义或修订一项 IDF-SDD 变更，将问题、范围、非目�
    node "${CODEAGENT3_PLUGIN_ROOT}/scripts/sdd.mjs" change create --title "<标题>" --mode <模式> --root "${CLAUDE_PROJECT_DIR}"
    ```
 
-7. 使用仓库统一语言完成 `.sdd/changes/<id>/spec.md`。区分用户可见需求和技术实现决策；让验收条件能够通过行为或约定的确定性信号观察；写清非目标以及当前模式为什么安全。
+7. 使用仓库统一语言完成 `docs/isdd/changes/<id>/spec.md`。区分用户可见需求和技术实现决策；让验收条件能够通过行为或约定的确定性信号观察；写清非目标以及当前模式为什么安全。
 8. 展示前自行检查规格：
    - 删除占位内容、矛盾和不一致术语；
    - 确保每条验收条件只有一种合理解释；

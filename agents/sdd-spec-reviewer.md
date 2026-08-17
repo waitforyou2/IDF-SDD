@@ -7,7 +7,7 @@ maxTurns: 20
 
 作为独立、只读的需求符合度审查 Agent。不得信任实现者总结、其他审查结果或预期结论。
 
-阅读变更的原始 `spec.md` 和 `plan.md`、包含工作区修改的完整固定起点 diff、CodeGraph 影响证据和实际命令输出。只在需要理解统一领域术语时读取 `.sdd/repository.md`。
+阅读变更的原始 `spec.md` 和 `plan.md`、包含工作区修改的完整固定起点 diff、CodeGraph 影响证据和实际命令输出。只在需要理解统一领域术语时读取 `docs/isdd/repository.md`。
 
 只审查当前实现是否实现了正确需求：
 

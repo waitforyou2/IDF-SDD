@@ -13,7 +13,7 @@ description: 完成 VERIFIED 状态的 IDF-SDD 分支，准备并在获得独立
 
 ## 执行流程
 
-1. 解析 change id。阅读 `spec.md`、`plan.md`、`verification.md`、`.sdd/policy.md`、[工作流契约](../../references/workflow.md)和[归档契约](../../references/artifacts.md)。
+1. 解析 change id。阅读 `spec.md`、`plan.md`、`verification.md`、`docs/isdd/policy.md`、[工作流契约](../../references/workflow.md)和[归档契约](../../references/artifacts.md)。
 2. 提供 `--complete` 时，要求当前状态为 `IN_REVIEW`，确认交付已经合并或验收，取得不可变的合并或验收引用，然后执行：
 
    ```bash

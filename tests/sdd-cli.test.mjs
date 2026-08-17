@@ -102,15 +102,15 @@ test('runs the complete repository and change lifecycle with durable artifacts',
     assert.equal(result.status, 0, result.stderr);
     assert.ok(fs.existsSync(path.join(root, '.codegraph', 'codegraph.db')));
     assert.match(fs.readFileSync(path.join(root, '.gitignore'), 'utf8'), /\.codegraph\//);
-    assert.ok(fs.existsSync(path.join(root, '.sdd', 'policy.md')));
+    assert.ok(fs.existsSync(path.join(root, 'docs', 'isdd', 'policy.md')));
 
-    replaceComments(path.join(root, '.sdd', 'repository.md'));
+    replaceComments(path.join(root, 'docs', 'isdd', 'repository.md'));
     result = cli(root, fakeCodeGraph, ['validate', '--repo']);
     assert.equal(result.status, 0, result.stderr);
 
     result = cli(root, fakeCodeGraph, ['change', 'create', '--id', 'REQ-101', '--title', 'Add avatar field', '--mode', 'lite']);
     assert.equal(result.status, 0, result.stderr);
-    const directory = path.join(root, '.sdd', 'changes', 'REQ-101');
+    const directory = path.join(root, 'docs', 'isdd', 'changes', 'REQ-101');
 
     replaceComments(path.join(directory, 'spec.md'), 'Verified requirement detail.');
     result = cli(root, fakeCodeGraph, ['transition', '--id', 'REQ-101', '--to', 'DEFINED']);
@@ -198,11 +198,11 @@ test('rejects a plan that omits executable task contract fields', () => {
   try {
     let result = cli(root, fakeCodeGraph, ['init']);
     assert.equal(result.status, 0, result.stderr);
-    replaceComments(path.join(root, '.sdd', 'repository.md'));
+    replaceComments(path.join(root, 'docs', 'isdd', 'repository.md'));
 
     result = cli(root, fakeCodeGraph, ['change', 'create', '--id', 'REQ-103', '--title', 'Incomplete plan contract', '--mode', 'standard']);
     assert.equal(result.status, 0, result.stderr);
-    const directory = path.join(root, '.sdd', 'changes', 'REQ-103');
+    const directory = path.join(root, 'docs', 'isdd', 'changes', 'REQ-103');
     replaceComments(path.join(directory, 'spec.md'));
     result = cli(root, fakeCodeGraph, ['transition', '--id', 'REQ-103', '--to', 'DEFINED']);
     assert.equal(result.status, 0, result.stderr);
@@ -227,11 +227,11 @@ test('rejects verification that collapses the two review axes', () => {
   try {
     let result = cli(root, fakeCodeGraph, ['init']);
     assert.equal(result.status, 0, result.stderr);
-    replaceComments(path.join(root, '.sdd', 'repository.md'));
+    replaceComments(path.join(root, 'docs', 'isdd', 'repository.md'));
 
     result = cli(root, fakeCodeGraph, ['change', 'create', '--id', 'REQ-104', '--title', 'Collapsed review', '--mode', 'strict']);
     assert.equal(result.status, 0, result.stderr);
-    const directory = path.join(root, '.sdd', 'changes', 'REQ-104');
+    const directory = path.join(root, 'docs', 'isdd', 'changes', 'REQ-104');
     replaceComments(path.join(directory, 'spec.md'));
     result = cli(root, fakeCodeGraph, ['transition', '--id', 'REQ-104', '--to', 'DEFINED']);
     assert.equal(result.status, 0, result.stderr);

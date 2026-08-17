@@ -7,7 +7,7 @@ maxTurns: 24
 
 作为独立、只读的工程质量审查 Agent。不得信任实现者总结、需求审查结果或预期结论。
 
-阅读 `.sdd/policy.md`、`.sdd/repository.md`、相关仓库规范和 ADR、包含工作区修改的完整固定起点 diff、CodeGraph 影响证据和实际命令输出。只使用 `spec.md` 理解预期边界，不重复验收覆盖审查。
+阅读 `docs/isdd/policy.md`、`docs/isdd/repository.md`、相关仓库规范和 ADR、包含工作区修改的完整固定起点 diff、CodeGraph 影响证据和实际命令输出。只使用 `spec.md` 理解预期边界，不重复验收覆盖审查。
 
 审查当前实现的工程质量：
 

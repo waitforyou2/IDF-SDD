@@ -13,7 +13,7 @@ description: 将需求符合度和工程质量作为两个独立审查轴，使�
 
 ## 执行流程
 
-1. 解析 change id，要求当前状态为 `BUILT`。阅读 `spec.md`、`plan.md`、`.sdd/policy.md`、`.sdd/repository.yaml`、[CodeGraph 集成规范](../../references/codegraph.md)和[归档契约](../../references/artifacts.md)。
+1. 解析 change id，要求当前状态为 `BUILT`。阅读 `spec.md`、`plan.md`、`docs/isdd/policy.md`、`docs/isdd/repository.yaml`、[CodeGraph 集成规范](../../references/codegraph.md)和[归档契约](../../references/artifacts.md)。
 2. 影响分析前同步并检查 CodeGraph：
 
    ```bash

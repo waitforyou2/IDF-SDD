@@ -13,7 +13,7 @@ description: 按依赖顺序逐个垂直切片实现或修复 PLANNED 状态的 
 
 ## 执行流程
 
-1. 解析 change id，要求当前状态为 `PLANNED`。阅读 `spec.md`、`plan.md`、`.sdd/policy.md` 和[工作流契约](../../references/workflow.md)。
+1. 解析 change id，要求当前状态为 `PLANNED`。阅读 `spec.md`、`plan.md`、`docs/isdd/policy.md` 和[工作流契约](../../references/workflow.md)。
 2. 检查 `git status --short` 和相关 diff。所有预先存在的变更都属于用户，不得丢弃、暂存、提交或重写无关内容。
 3. 确认计划仍符合当前代码。精确符号和结构问题使用 `codegraph_explore`，不得重复 `plan.md` 已保存的大范围分析。
 4. 按依赖顺序逐个实现 tracer bullet。每项行为变更或缺陷修复都在已确认 seam 上执行 RED-GREEN-REFACTOR：
