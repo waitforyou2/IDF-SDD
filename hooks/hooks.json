@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CAC_PLUGIN_ROOT}/scripts/session-start.mjs\"",
+            "command": "node \"${CODEAGENT3_PLUGIN_ROOT}/scripts/session-start.mjs\"",
             "timeout": 5
           }
         ]

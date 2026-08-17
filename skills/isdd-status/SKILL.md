@@ -16,7 +16,7 @@ description: 只读报告 IDF-SDD 仓库就绪情况、进行中与已完成变�
 1. 查询仓库或变更状态：
 
    ```bash
-   node "${CAC_PLUGIN_ROOT}/scripts/sdd.mjs" status $ARGUMENTS --root "${CLAUDE_PROJECT_DIR}"
+   node "${CODEAGENT3_PLUGIN_ROOT}/scripts/sdd.mjs" status $ARGUMENTS --root "${CLAUDE_PROJECT_DIR}"
    ```
 
 2. 如果 `.codegraph/` 已存在，执行 `codegraph status "${CLAUDE_PROJECT_DIR}"`。索引缺失或待同步时只报告状态，除非用户要求，否则不得重建。

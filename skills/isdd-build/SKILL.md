@@ -27,14 +27,14 @@ description: 按依赖顺序逐个垂直切片实现或修复 PLANNED 状态的 
 8. 遇到阻塞时，只记录阻塞原因，不改变生命周期状态：
 
    ```bash
-   node "${CAC_PLUGIN_ROOT}/scripts/sdd.mjs" block --id <id> --reason "<原因>" --root "${CLAUDE_PROJECT_DIR}"
+   node "${CODEAGENT3_PLUGIN_ROOT}/scripts/sdd.mjs" block --id <id> --reason "<原因>" --root "${CLAUDE_PROJECT_DIR}"
    ```
 
 9. 未获得独立明确授权时，不得 commit、push、创建 PR、merge 或 deploy。
 10. 所有计划任务完成后才能流转：
 
    ```bash
-   node "${CAC_PLUGIN_ROOT}/scripts/sdd.mjs" transition --id <id> --to BUILT --root "${CLAUDE_PROJECT_DIR}"
+   node "${CODEAGENT3_PLUGIN_ROOT}/scripts/sdd.mjs" transition --id <id> --to BUILT --root "${CLAUDE_PROJECT_DIR}"
    ```
 
 ## 完成条件

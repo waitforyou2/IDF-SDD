@@ -19,7 +19,7 @@ description: 初始化或修复业务 Git 仓库的 IDF-SDD 环境，建立本�
 4. 执行：
 
    ```bash
-   node "${CAC_PLUGIN_ROOT}/scripts/sdd.mjs" init --root "${CLAUDE_PROJECT_DIR}"
+   node "${CODEAGENT3_PLUGIN_ROOT}/scripts/sdd.mjs" init --root "${CLAUDE_PROJECT_DIR}"
    ```
 
 5. 使用一次聚焦的 `codegraph_explore` 仓库分析，覆盖仓库职责、入口、模块边界、主要调用流程、测试布局和高影响区域。构建文件、说明文档、配置、提交历史和 ADR 等图谱无法解释的内容，直接读取原文件。
@@ -34,7 +34,7 @@ description: 初始化或修复业务 Git 仓库的 IDF-SDD 环境，建立本�
 9. 执行：
 
    ```bash
-   node "${CAC_PLUGIN_ROOT}/scripts/sdd.mjs" validate --repo --root "${CLAUDE_PROJECT_DIR}"
+   node "${CODEAGENT3_PLUGIN_ROOT}/scripts/sdd.mjs" validate --repo --root "${CLAUDE_PROJECT_DIR}"
    ```
 
 10. 报告新增或修改的文件、CodeGraph 健康状态、识别出的工程命令、验证证据，以及仍需团队确认的事实。

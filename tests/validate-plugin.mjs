@@ -54,10 +54,10 @@ const hooks = readJson(path.join(ROOT, 'hooks', 'hooks.json'));
 check(Array.isArray(hooks.hooks?.SessionStart), 'SessionStart hook is missing');
 check(fs.existsSync(path.join(ROOT, 'scripts', 'session-start.mjs')), 'SessionStart script is missing');
 
-// 7. hooks.json 中的路径变量应为 ${CAC_PLUGIN_ROOT}
+// 7. hooks.json 中的路径变量应为 ${CODEAGENT3_PLUGIN_ROOT}
 const hooksRaw = fs.readFileSync(path.join(ROOT, 'hooks', 'hooks.json'), 'utf8');
-check(!hooksRaw.includes('CLAUDE_PLUGIN_ROOT'), 'hooks.json must use ${CAC_PLUGIN_ROOT} instead of ${CLAUDE_PLUGIN_ROOT}');
-check(hooksRaw.includes('CAC_PLUGIN_ROOT'), 'hooks.json must reference ${CAC_PLUGIN_ROOT}');
+check(!hooksRaw.includes('CLAUDE_PLUGIN_ROOT'), 'hooks.json must not use ${CLAUDE_PLUGIN_ROOT}');
+check(hooksRaw.includes('CODEAGENT3_PLUGIN_ROOT'), 'hooks.json must reference ${CODEAGENT3_PLUGIN_ROOT}');
 
 // 8. skills（7 个，目录名 = SKILL.md name 字段，加 sdd- 前缀）
 const expectedSkills = ['isdd-init', 'isdd-define', 'isdd-plan', 'isdd-build', 'isdd-verify', 'isdd-ship', 'isdd-status'];

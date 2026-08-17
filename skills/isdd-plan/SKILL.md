@@ -18,7 +18,7 @@ description: 为 DEFINED 状态的 IDF-SDD 变更生成或修订可执行技术�
 3. 创建 `plan.md`：
 
    ```bash
-   node "${CAC_PLUGIN_ROOT}/scripts/sdd.mjs" artifact plan --id <id> --root "${CLAUDE_PROJECT_DIR}"
+   node "${CODEAGENT3_PLUGIN_ROOT}/scripts/sdd.mjs" artifact plan --id <id> --root "${CLAUDE_PROJECT_DIR}"
    ```
 
 4. 在大范围文件搜索前使用 `codegraph_explore`，查询当前端到端流程、精确入口和符号、调用方与被调用方、路由、数据边界、相关测试和影响范围。配置、ADR、过期文件或待同步文件需要直接读取。
@@ -39,7 +39,7 @@ description: 为 DEFINED 状态的 IDF-SDD 变更生成或修订可执行技术�
 11. 只有校验通过后才能流转：
 
    ```bash
-   node "${CAC_PLUGIN_ROOT}/scripts/sdd.mjs" transition --id <id> --to PLANNED --root "${CLAUDE_PROJECT_DIR}"
+   node "${CODEAGENT3_PLUGIN_ROOT}/scripts/sdd.mjs" transition --id <id> --to PLANNED --root "${CLAUDE_PROJECT_DIR}"
    ```
 
 ## 完成条件

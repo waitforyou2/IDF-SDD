@@ -17,7 +17,7 @@ description: 完成 VERIFIED 状态的 IDF-SDD 分支，准备并在获得独立
 2. 提供 `--complete` 时，要求当前状态为 `IN_REVIEW`，确认交付已经合并或验收，取得不可变的合并或验收引用，然后执行：
 
    ```bash
-   node "${CAC_PLUGIN_ROOT}/scripts/sdd.mjs" transition --id <id> --to DONE --merged --accepted-ref "<引用>" --root "${CLAUDE_PROJECT_DIR}"
+   node "${CODEAGENT3_PLUGIN_ROOT}/scripts/sdd.mjs" transition --id <id> --to DONE --merged --accepted-ref "<引用>" --root "${CLAUDE_PROJECT_DIR}"
    ```
 
    报告归档结果后停止。
@@ -25,7 +25,7 @@ description: 完成 VERIFIED 状态的 IDF-SDD 分支，准备并在获得独立
 4. 创建或复用 `delivery.md`：
 
    ```bash
-   node "${CAC_PLUGIN_ROOT}/scripts/sdd.mjs" artifact delivery --id <id> --root "${CLAUDE_PROJECT_DIR}"
+   node "${CODEAGENT3_PLUGIN_ROOT}/scripts/sdd.mjs" artifact delivery --id <id> --root "${CLAUDE_PROJECT_DIR}"
    ```
 
 5. 填写可评审标题、为什么修改、修改内容、可观察结果、验证证据、风险、归档链接和人工关注点。影响生产的变更还必须记录分阶段发布、监控指标和阈值、适用时的功能开关负责人，以及可执行回滚步骤；仅本地变更需要说明为什么这些内容不适用。在外部评审对象创建前保留 `Delivery-Ref: PENDING`。
@@ -40,7 +40,7 @@ description: 完成 VERIFIED 状态的 IDF-SDD 分支，准备并在获得独立
 9. 授权创建 PR 或评审请求后，用真实 URL 或不可变 id 替换 `Delivery-Ref: PENDING`，然后流转：
 
    ```bash
-   node "${CAC_PLUGIN_ROOT}/scripts/sdd.mjs" transition --id <id> --to IN_REVIEW --delivery-ref "<引用>" --root "${CLAUDE_PROJECT_DIR}"
+   node "${CODEAGENT3_PLUGIN_ROOT}/scripts/sdd.mjs" transition --id <id> --to IN_REVIEW --delivery-ref "<引用>" --root "${CLAUDE_PROJECT_DIR}"
    ```
 
 ## 完成条件

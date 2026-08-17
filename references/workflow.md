@@ -36,7 +36,7 @@
 所有状态流转都必须使用插件工具：
 
 ```bash
-node "${CAC_PLUGIN_ROOT}/scripts/sdd.mjs" transition --id <id> --to <状态>
+node "${CODEAGENT3_PLUGIN_ROOT}/scripts/sdd.mjs" transition --id <id> --to <状态>
 ```
 
 不得手工修改状态 frontmatter。

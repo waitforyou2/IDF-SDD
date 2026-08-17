@@ -17,7 +17,7 @@ description: 定义或修订一项 IDF-SDD 变更，将问题、范围、非目�
 2. 如果参数指向已有的 `DRAFT` 变更，继续使用该记录；否则对原始需求分类：
 
    ```bash
-   node "${CAC_PLUGIN_ROOT}/scripts/sdd.mjs" classify --text "<需求>" --root "${CLAUDE_PROJECT_DIR}"
+   node "${CODEAGENT3_PLUGIN_ROOT}/scripts/sdd.mjs" classify --text "<需求>" --root "${CLAUDE_PROJECT_DIR}"
    ```
 
 3. 阅读 `.sdd/repository.md` 中的统一术语和相关历史决策。使用一次 `codegraph_explore` 定位业务能力、可能影响的模块、已有测试 seam 和大致影响范围。此阶段不得设计技术方案。图谱证据与 lite 判断冲突时，升级模式。
@@ -26,7 +26,7 @@ description: 定义或修订一项 IDF-SDD 变更，将问题、范围、非目�
 6. 必要时创建变更记录：
 
    ```bash
-   node "${CAC_PLUGIN_ROOT}/scripts/sdd.mjs" change create --title "<标题>" --mode <模式> --root "${CLAUDE_PROJECT_DIR}"
+   node "${CODEAGENT3_PLUGIN_ROOT}/scripts/sdd.mjs" change create --title "<标题>" --mode <模式> --root "${CLAUDE_PROJECT_DIR}"
    ```
 
 7. 使用仓库统一语言完成 `.sdd/changes/<id>/spec.md`。区分用户可见需求和技术实现决策；让验收条件能够通过行为或约定的确定性信号观察；写清非目标以及当前模式为什么安全。
@@ -39,7 +39,7 @@ description: 定义或修订一项 IDF-SDD 变更，将问题、范围、非目�
 10. 只有完成条件通过后才能流转：
 
    ```bash
-   node "${CAC_PLUGIN_ROOT}/scripts/sdd.mjs" transition --id <id> --to DEFINED --root "${CLAUDE_PROJECT_DIR}"
+   node "${CODEAGENT3_PLUGIN_ROOT}/scripts/sdd.mjs" transition --id <id> --to DEFINED --root "${CLAUDE_PROJECT_DIR}"
    ```
 
 11. 用户提供 `--auto` 时，仅当最终模式为 lite 才继续。依次遵守 `plan`、`build` 和 `verify` Skill 契约，创建全部归档，并在 ship 或任何外部发布前停止。非 lite 模式忽略自动执行并说明原因。
