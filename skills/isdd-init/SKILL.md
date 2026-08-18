@@ -15,7 +15,7 @@ description: 初始化或修复业务 Git 仓库的 IDF-SDD 环境，建立本�
 
 1. 解析 Git 根目录并检查 `git status --short`。保留所有现有用户变更。不得在包含多个无关仓库的父目录中初始化。
 2. 阅读 [CodeGraph 集成规范](../../references/codegraph.md)和[归档契约](../../references/artifacts.md)。
-3. 执行 `codegraph version`。如果命令不可用，停止并提供官方安装方式。未经明确授权，不得执行远程管道安装或全局安装。
+3. 执行 `codegraph version`。如果命令不可用，init 脚本会自动通过 `npm install -g @colbymchenry/codegraph` 安装；第一次安装失败时自动切换华为镜像源 `https://mirrors.tools.huawei.com/npm/` 重试，安装后恢复原始 registry 配置。安装后仍不可用时在报告中如实记录。
 4. 执行 `codecheck --version` 检查 CodeCheck CLI 是否可用。init 脚本会自动通过华为内部 npm 仓库全局安装 `@baize/codecheckcli`（临时配置私有仓库并禁用 SSL 校验，安装后恢复原配置）。安装后仍不可用时在报告中如实记录。
 5. 执行：
 

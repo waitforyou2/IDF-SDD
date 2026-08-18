@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 
 const WORKFLOW_VERSION = '1.0.0';
 const CODEGRAPH_MIN_VERSION = '1.5.0';
+const CODEGRAPH_NPM_PACKAGE = '@colbymchenry/codegraph';
 const CODECHECK_MIN_VERSION = '2.1.1';
 const CODECHECK_NPM_PACKAGE = '@baize/codecheckcli';
 const CODECHECK_NPM_REGISTRY = 'https://cmc.centralrepo.rnd.huawei.com/artifactory/api/npm/product_npm/';
@@ -257,6 +258,61 @@ function runCodeGraph(args, root, timeout = 600_000) {
   };
 }
 
+const CODEGRAPH_FALLBACK_REGISTRY = 'https://mirrors.tools.huawei.com/npm/';
+
+function detectCodegraphVersion(root) {
+  const configured = process.env.SDD_CODEGRAPH_COMMAND || 'codegraph';
+  const isScript = /\.(?:mjs|cjs|js)$/i.test(configured);
+  const command = isScript ? process.execPath : configured;
+  const commandArgs = isScript ? [configured, 'version'] : ['version'];
+  const result = run(command, commandArgs, { cwd: root, timeout: 15_000 });
+  if (result.status !== 0) return null;
+  return versionTuple((result.stdout || result.stderr || '').trim());
+}
+
+function ensureCodegraph(root) {
+  const version = detectCodegraphVersion(root);
+  if (version && compareVersions(version, versionTuple(CODEGRAPH_MIN_VERSION)) >= 0) {
+    return { installed: true, version: version.join('.'), autoInstalled: false };
+  }
+
+  // 第一次尝试：直接安装
+  let installResult = run('npm', ['install', '-g', CODEGRAPH_NPM_PACKAGE], { cwd: root, timeout: 300_000 });
+
+  // 第一次失败：配置华为镜像源后重试
+  if (installResult.status !== 0) {
+    const savedRegistry = run('npm', ['config', 'get', 'registry'], { cwd: root, timeout: 10_000 });
+    const savedValue = savedRegistry.status === 0 ? (savedRegistry.stdout || '').trim() : '';
+    run('npm', ['config', 'set', 'registry', CODEGRAPH_FALLBACK_REGISTRY], { cwd: root, timeout: 10_000 });
+    installResult = run('npm', ['install', '-g', CODEGRAPH_NPM_PACKAGE], { cwd: root, timeout: 300_000 });
+    // 恢复原始 registry
+    if (savedValue && savedValue !== 'undefined') {
+      run('npm', ['config', 'set', 'registry', savedValue], { cwd: root, timeout: 10_000 });
+    } else {
+      run('npm', ['config', 'delete', 'registry'], { cwd: root, timeout: 10_000 });
+    }
+  }
+
+  if (installResult.status !== 0) {
+    return {
+      installed: false,
+      version: null,
+      autoInstalled: false,
+      error: `npm install -g ${CODEGRAPH_NPM_PACKAGE} 失败：${(installResult.stderr || '').trim()}`
+    };
+  }
+  const recheckVersion = detectCodegraphVersion(root);
+  if (!recheckVersion) {
+    return {
+      installed: false,
+      version: null,
+      autoInstalled: true,
+      error: '安装后仍无法执行 codegraph version，可能需要重启终端。'
+    };
+  }
+  return { installed: true, version: recheckVersion.join('.'), autoInstalled: true };
+}
+
 function ensureCodecheck(root) {
   const result = run('codecheck', ['--version'], { cwd: root, timeout: 15_000 });
   if (result.status === 0) {
@@ -424,10 +480,18 @@ function initRepository(root, flags) {
 
   let graphResult = { stdout: '已明确跳过 CodeGraph。', stderr: '' };
   let codegraphVersion = null;
+  let codegraphAutoInstalled = false;
   const codegraphEnabled = !flags['skip-codegraph'];
   if (codegraphEnabled) {
-    const versionResult = runCodeGraph(['version'], root, 30_000);
-    codegraphVersion = requireCodeGraphVersion(versionResult.stdout || versionResult.stderr);
+    const codegraphStatus = ensureCodegraph(root);
+    if (!codegraphStatus.installed) {
+      fail('CodeGraph 安装失败，请手动安装后重试。', {
+        install: `npm install -g ${CODEGRAPH_NPM_PACKAGE}`,
+        error: codegraphStatus.error
+      });
+    }
+    codegraphAutoInstalled = codegraphStatus.autoInstalled;
+    codegraphVersion = codegraphStatus.version;
     if (fs.existsSync(path.join(root, '.codegraph'))) {
       graphResult = runCodeGraph(['status', root], root, 120_000);
     } else {
@@ -454,6 +518,7 @@ function initRepository(root, flags) {
     root,
     codegraph_enabled: codegraphEnabled,
     codegraph_version: codegraphVersion,
+    codegraph_auto_installed: codegraphAutoInstalled,
     codegraph_summary: graphResult.stdout.slice(0, 4000),
     codecheck_installed: codecheckResult.installed,
     codecheck_version: codecheckResult.version,
