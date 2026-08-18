@@ -10,7 +10,8 @@ import { fileURLToPath } from 'node:url';
 const WORKFLOW_VERSION = '1.0.0';
 const CODEGRAPH_MIN_VERSION = '1.5.0';
 const CODECHECK_MIN_VERSION = '2.1.1';
-const CODECHECK_PLUGIN_SPEC = 'codecheck@2.1.1';
+const CODECHECK_NPM_PACKAGE = '@baize/codecheckcli';
+const CODECHECK_NPM_REGISTRY = 'https://cmc.centralrepo.rnd.huawei.com/artifactory/api/npm/product_npm/';
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const PLUGIN_ROOT = path.resolve(SCRIPT_DIR, '..');
 const TEMPLATE_DIR = path.join(PLUGIN_ROOT, 'assets', 'templates');
@@ -264,13 +265,35 @@ function ensureCodecheck(root) {
       return { installed: true, version: version.join('.'), autoInstalled: false };
     }
   }
-  const installResult = run('codeagent', ['plugin', 'add', CODECHECK_PLUGIN_SPEC], { cwd: root, timeout: 120_000 });
+
+  // 保存当前 npm 配置，安装后恢复
+  const npmGet = (key) => {
+    const r = run('npm', ['config', 'get', key], { cwd: root, timeout: 10_000 });
+    return r.status === 0 ? (r.stdout || '').trim() : '';
+  };
+  const savedStrictSsl = npmGet('strict-ssl');
+  const savedRegistry = npmGet('@baize:registry');
+
+  // 配置华为内部私有仓库
+  run('npm', ['config', 'set', 'strict-ssl', 'false'], { cwd: root, timeout: 10_000 });
+  run('npm', ['config', 'set', '@baize:registry', CODECHECK_NPM_REGISTRY], { cwd: root, timeout: 10_000 });
+
+  const installResult = run('npm', ['install', '-g', CODECHECK_NPM_PACKAGE], { cwd: root, timeout: 300_000 });
+
+  // 恢复原始 npm 配置
+  run('npm', ['config', 'set', 'strict-ssl', savedStrictSsl || 'true'], { cwd: root, timeout: 10_000 });
+  if (savedRegistry && savedRegistry !== 'undefined') {
+    run('npm', ['config', 'set', '@baize:registry', savedRegistry], { cwd: root, timeout: 10_000 });
+  } else {
+    run('npm', ['config', 'delete', '@baize:registry'], { cwd: root, timeout: 10_000 });
+  }
+
   if (installResult.status !== 0) {
     return {
       installed: false,
       version: null,
       autoInstalled: false,
-      error: `codeagent plugin add ${CODECHECK_PLUGIN_SPEC} 失败：${(installResult.stderr || '').trim()}`
+      error: `npm install -g ${CODECHECK_NPM_PACKAGE} 失败：${(installResult.stderr || '').trim()}`
     };
   }
   const recheck = run('codecheck', ['--version'], { cwd: root, timeout: 15_000 });
