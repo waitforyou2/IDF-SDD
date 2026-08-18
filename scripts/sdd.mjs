@@ -9,6 +9,8 @@ import { fileURLToPath } from 'node:url';
 
 const WORKFLOW_VERSION = '1.0.0';
 const CODEGRAPH_MIN_VERSION = '1.5.0';
+const CODECHECK_MIN_VERSION = '2.1.1';
+const CODECHECK_PLUGIN_SPEC = 'codecheck@2.1.1';
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const PLUGIN_ROOT = path.resolve(SCRIPT_DIR, '..');
 const TEMPLATE_DIR = path.join(PLUGIN_ROOT, 'assets', 'templates');
@@ -254,6 +256,36 @@ function runCodeGraph(args, root, timeout = 600_000) {
   };
 }
 
+function ensureCodecheck(root) {
+  const result = run('codecheck', ['--version'], { cwd: root, timeout: 15_000 });
+  if (result.status === 0) {
+    const version = versionTuple((result.stdout || result.stderr || '').trim());
+    if (version && compareVersions(version, versionTuple(CODECHECK_MIN_VERSION)) >= 0) {
+      return { installed: true, version: version.join('.'), autoInstalled: false };
+    }
+  }
+  const installResult = run('codeagent', ['plugin', 'add', CODECHECK_PLUGIN_SPEC], { cwd: root, timeout: 120_000 });
+  if (installResult.status !== 0) {
+    return {
+      installed: false,
+      version: null,
+      autoInstalled: false,
+      error: `codeagent plugin add ${CODECHECK_PLUGIN_SPEC} 失败：${(installResult.stderr || '').trim()}`
+    };
+  }
+  const recheck = run('codecheck', ['--version'], { cwd: root, timeout: 15_000 });
+  if (recheck.status !== 0) {
+    return {
+      installed: false,
+      version: null,
+      autoInstalled: true,
+      error: '安装后仍无法执行 codecheck --version，可能需要重启终端。'
+    };
+  }
+  const version = versionTuple((recheck.stdout || recheck.stderr || '').trim());
+  return { installed: true, version: version ? version.join('.') : 'unknown', autoInstalled: true };
+}
+
 function versionTuple(value) {
   const match = String(value || '').match(/(?:^|[^0-9])(\d+)\.(\d+)\.(\d+)(?:[^0-9]|$)/);
   return match ? match.slice(1, 4).map(Number) : null;
@@ -391,6 +423,8 @@ function initRepository(root, flags) {
   if (!fs.existsSync(policyFile)) copyTemplate('policy.md', policyFile);
   const gitignoreChanged = ensureGitignore(root);
 
+  const codecheckResult = ensureCodecheck(root);
+
   emit({
     ok: true,
     action: 'init',
@@ -398,6 +432,10 @@ function initRepository(root, flags) {
     codegraph_enabled: codegraphEnabled,
     codegraph_version: codegraphVersion,
     codegraph_summary: graphResult.stdout.slice(0, 4000),
+    codecheck_installed: codecheckResult.installed,
+    codecheck_version: codecheckResult.version,
+    codecheck_auto_installed: codecheckResult.autoInstalled,
+    codecheck_error: codecheckResult.error || null,
     detected: detection,
     gitignore_changed: gitignoreChanged,
     artifacts: [configFile, repositoryFile, policyFile],
@@ -634,6 +672,7 @@ function validateVerification(root, id) {
   const errors = validateRequiredSections(file, [
     '验收证据',
     '自动化检查',
+    'CodeCheck 门禁',
     'CodeGraph 影响分析',
     '评审发现',
     '已知限制',
