@@ -17,34 +17,38 @@ description: 初始化或修复业务 Git 仓库的 IDF-SDD 环境，建立本�
 2. 阅读 [CodeGraph 集成规范](../../references/codegraph.md)和[归档契约](../../references/artifacts.md)。
 3. 执行 `codegraph version`。如果命令不可用，init 脚本会自动通过 `npm install -g @colbymchenry/codegraph` 安装；第一次安装失败时自动切换华为镜像源 `https://mirrors.tools.huawei.com/npm/` 重试，安装后恢复原始 registry 配置。安装后仍不可用时在报告中如实记录。
 4. 执行 `codecheck --version` 检查 CodeCheck CLI 是否可用。init 脚本会自动通过华为内部 npm 仓库全局安装 `@baize/codecheckcli`（临时配置私有仓库并禁用 SSL 校验，安装后恢复原配置）。安装后仍不可用时在报告中如实记录。
-5. 执行：
+5. 执行 `codehub-cli --version` 检查 CodeHub CLI 是否可用。init 脚本会自动通过华为内部 npm 仓库全局安装 `@codehub/codehub-cli`（临时配置私有仓库并禁用 SSL 校验，安装后恢复原配置）。安装后仍不可用时在报告中如实记录。
+6. 检查 CodeHub CLI 认证状态（`codehub-cli auth status`）。已登录则跳过。未登录时，提示用户打开一个独立终端（CMD 或 PowerShell），运行 `codehub-cli auth login --w3 --all`（W3 交互式登录，一键登录所有地域），在终端中输入 W3 用户名和密码完成登录。告诉用户完成后回来确认，然后重新检查 `codehub-cli auth status`。不得在当前会话中直接传密码。
+7. 执行：
 
    ```bash
    node "${CODEAGENT3_PLUGIN_ROOT}/scripts/sdd.mjs" init --root "${CLAUDE_PROJECT_DIR}"
    ```
 
-6. 使用一次聚焦的 `codegraph_explore` 仓库分析，覆盖仓库职责、入口、模块边界、主要调用流程、测试布局和高影响区域。构建文件、说明文档、配置、提交历史和 ADR 等图谱无法解释的内容，直接读取原文件。
-7. 使用已验证事实替换 `docs/isdd/repository.md` 中的全部占位内容，至少包括：
+8. 使用一次聚焦的 `codegraph_explore` 仓库分析，覆盖仓库职责、入口、模块边界、主要调用流程、测试布局和高影响区域。构建文件、说明文档、配置、提交历史和 ADR 等图谱无法解释的内容，直接读取原文件。
+9. 使用已验证事实替换 `docs/isdd/repository.md` 中的全部占位内容，至少包括：
    - 仓库职责、非职责、入口和深模块 seam；
    - 统一领域术语，以及不得混用的术语；
    - 已存在的 ADR 或其他持久决策记录；
    - 测试位置和成本最低的有效反馈命令；
    - 敏感区域、生成代码、兼容边界和代码归属。
-8. 确认或修正 `docs/isdd/repository.yaml`，记录 CodeGraph 状态和至少一条实际可运行的低成本验证命令。不得根据图结构臆测业务语义或架构决策原因。
-9. 阅读 `docs/isdd/policy.md`。重复初始化时保留团队已有修改。
-10. 执行：
+10. 确认或修正 `docs/isdd/repository.yaml`，记录 CodeGraph 状态和至少一条实际可运行的低成本验证命令。不得根据图结构臆测业务语义或架构决策原因。
+11. 阅读 `docs/isdd/policy.md`。重复初始化时保留团队已有修改。
+12. 执行：
 
     ```bash
     node "${CODEAGENT3_PLUGIN_ROOT}/scripts/sdd.mjs" validate --repo --root "${CLAUDE_PROJECT_DIR}"
     ```
 
-11. 报告新增或修改的文件、CodeGraph 健康状态、CodeCheck 安装状态、识别出的工程命令、验证证据，以及仍需团队确认的事实。
+13. 报告新增或修改的文件、CodeGraph 健康状态、CodeCheck 和 CodeHub 安装与认证状态、识别出的工程命令、验证证据，以及仍需团队确认的事实。
 
 ## 完成条件
 
 - `docs/isdd/repository.yaml`、`docs/isdd/repository.md` 和 `docs/isdd/policy.md` 均通过校验。
 - `.codegraph/` 已存在，且 `codegraph status` 成功。
 - CodeCheck CLI 已安装且 `codecheck --version` 可执行。
+- CodeHub CLI 已安装且 `codehub-cli --version` 可执行。
+- CodeHub CLI 已认证（已运行 `codehub-cli auth login --w3 --all`），或已在报告中明确标记待用户登录。
 - `.codegraph/` 被 Git 忽略，而 `docs/isdd/` 保持可提交。
 - 仓库架构和工程命令都有直接证据支持。
 - 已记录统一领域语言和历史决策，或明确说明当前不存在。

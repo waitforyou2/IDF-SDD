@@ -13,6 +13,9 @@ const CODEGRAPH_NPM_PACKAGE = '@colbymchenry/codegraph';
 const CODECHECK_MIN_VERSION = '2.1.1';
 const CODECHECK_NPM_PACKAGE = '@baize/codecheckcli';
 const CODECHECK_NPM_REGISTRY = 'https://cmc.centralrepo.rnd.huawei.com/artifactory/api/npm/product_npm/';
+const CODEHUB_MIN_VERSION = '1.0.0';
+const CODEHUB_NPM_PACKAGE = '@codehub/codehub-cli';
+const CODEHUB_NPM_REGISTRY = 'https://cmc.centralrepo.rnd.huawei.com/artifactory/api/npm/product_npm/';
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const PLUGIN_ROOT = path.resolve(SCRIPT_DIR, '..');
 const TEMPLATE_DIR = path.join(PLUGIN_ROOT, 'assets', 'templates');
@@ -365,6 +368,55 @@ function ensureCodecheck(root) {
   return { installed: true, version: version ? version.join('.') : 'unknown', autoInstalled: true };
 }
 
+function ensureCodehub(root) {
+  const result = run('codehub-cli', ['--version'], { cwd: root, timeout: 15_000 });
+  if (result.status === 0) {
+    const version = versionTuple((result.stdout || result.stderr || '').trim());
+    if (version && compareVersions(version, versionTuple(CODEHUB_MIN_VERSION)) >= 0) {
+      return { installed: true, version: version.join('.'), autoInstalled: false };
+    }
+  }
+
+  const npmGet = (key) => {
+    const r = run('npm', ['config', 'get', key], { cwd: root, timeout: 10_000 });
+    return r.status === 0 ? (r.stdout || '').trim() : '';
+  };
+  const savedStrictSsl = npmGet('strict-ssl');
+  const savedRegistry = npmGet('@codehub:registry');
+
+  run('npm', ['config', 'set', 'strict-ssl', 'false'], { cwd: root, timeout: 10_000 });
+  run('npm', ['config', 'set', '@codehub:registry', CODEHUB_NPM_REGISTRY], { cwd: root, timeout: 10_000 });
+
+  const installResult = run('npm', ['install', '-g', CODEHUB_NPM_PACKAGE], { cwd: root, timeout: 300_000 });
+
+  run('npm', ['config', 'set', 'strict-ssl', savedStrictSsl || 'true'], { cwd: root, timeout: 10_000 });
+  if (savedRegistry && savedRegistry !== 'undefined') {
+    run('npm', ['config', 'set', '@codehub:registry', savedRegistry], { cwd: root, timeout: 10_000 });
+  } else {
+    run('npm', ['config', 'delete', '@codehub:registry'], { cwd: root, timeout: 10_000 });
+  }
+
+  if (installResult.status !== 0) {
+    return {
+      installed: false,
+      version: null,
+      autoInstalled: false,
+      error: `npm install -g ${CODEHUB_NPM_PACKAGE} 失败：${(installResult.stderr || '').trim()}`
+    };
+  }
+  const recheck = run('codehub-cli', ['--version'], { cwd: root, timeout: 15_000 });
+  if (recheck.status !== 0) {
+    return {
+      installed: false,
+      version: null,
+      autoInstalled: true,
+      error: '安装后仍无法执行 codehub-cli --version，可能需要重启终端。'
+    };
+  }
+  const version = versionTuple((recheck.stdout || recheck.stderr || '').trim());
+  return { installed: true, version: version ? version.join('.') : 'unknown', autoInstalled: true };
+}
+
 function versionTuple(value) {
   const match = String(value || '').match(/(?:^|[^0-9])(\d+)\.(\d+)\.(\d+)(?:[^0-9]|$)/);
   return match ? match.slice(1, 4).map(Number) : null;
@@ -511,6 +563,7 @@ function initRepository(root, flags) {
   const gitignoreChanged = ensureGitignore(root);
 
   const codecheckResult = ensureCodecheck(root);
+  const codehubResult = ensureCodehub(root);
 
   emit({
     ok: true,
@@ -524,6 +577,10 @@ function initRepository(root, flags) {
     codecheck_version: codecheckResult.version,
     codecheck_auto_installed: codecheckResult.autoInstalled,
     codecheck_error: codecheckResult.error || null,
+    codehub_installed: codehubResult.installed,
+    codehub_version: codehubResult.version,
+    codehub_auto_installed: codehubResult.autoInstalled,
+    codehub_error: codehubResult.error || null,
     detected: detection,
     gitignore_changed: gitignoreChanged,
     artifacts: [configFile, repositoryFile, policyFile],

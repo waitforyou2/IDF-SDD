@@ -10,3 +10,6 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+
+# 本地 CodeGraph 索引（可重建缓存）
+.codegraph/

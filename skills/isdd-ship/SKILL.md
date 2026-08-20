@@ -37,10 +37,32 @@ description: 完成 VERIFIED 状态的 IDF-SDD 分支，准备并在获得独立
    - 任何一个参数都不授权 merge 或 deploy。
    缺少授权时必须询问，不得推断。混合工作区不得使用宽泛的全量暂存路径。
 8. 未授权外部发布时，完成 `delivery.md`，展示可选下一步，保持 `VERIFIED` 状态并停止。不得把删除分支或 worktree 当成默认收尾动作。
-9. 授权创建 PR 或评审请求后，用真实 URL 或不可变 id 替换 `Delivery-Ref: PENDING`，然后流转：
+9. 授权创建 PR 或评审请求后，用 `codehub-cli mr create` 创建 MR：
+
+   - **认证前置**：创建前确认 CodeHub CLI 已认证（`codehub-cli auth status`）。未认证时，提示用户打开独立终端运行 `codehub-cli auth login --w3 --all`（W3 交互式登录），完成后回来确认，再重新检查认证状态。不在当前会话中传密码。
+   - **源分支**：默认当前分支 `git branch --show-current`；用户明确指定时从其值。
+   - **目标分支**：默认与源分支相同；用户明确指定时从其值。
+   - **仓库**：从当前 Git remote 解析 `org/repo` 传入 `-p`。
+   - **标题**：取 `delivery.md` 的交付标题。
+   - **描述**：从 `delivery.md` 提炼「变更摘要」「评审关注点」「风险与回滚」「归档链接」四块，写入临时文件后用 `--no-auto-template -F <file>` 传入；不要把整个 delivery.md 原样塞入，也不要保留模板占位注释。
+   - **指派人/评审人**：默认 `--recommend-assignee`；用户明确指定时改用 `--assignees`/`--reviewers`。
+   - **Squash**：默认不开 `--squash`；用户明确要求时再加 `--squash --squash-commit-message "<交付标题>"`。
+
+   基础命令形态（以默认参数为例）：
 
    ```bash
-   node "${CODEAGENT3_PLUGIN_ROOT}/scripts/sdd.mjs" transition --id <id> --to IN_REVIEW --delivery-ref "<引用>" --root "${CLAUDE_PROJECT_DIR}"
+   codehub-cli mr create -p "<org/repo>" \
+     --source-branch "<当前分支>" \
+     --target-branch "<默认同源分支>" \
+     --title "<交付标题>" \
+     --no-auto-template -F "<临时描述文件>" \
+     --recommend-assignee
+   ```
+
+   创建成功后，用返回的 MR URL 替换 `Delivery-Ref: PENDING`，然后流转：
+
+   ```bash
+   node "${CODEAGENT3_PLUGIN_ROOT}/scripts/sdd.mjs" transition --id <id> --to IN_REVIEW --delivery-ref "<MR URL>" --root "${CLAUDE_PROJECT_DIR}"
    ```
 
 ## 完成条件
