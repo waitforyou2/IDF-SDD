@@ -105,7 +105,7 @@ test('ship 保持外部动作授权独立并确保生产交付可回滚', () => 
     '可执行回滚步骤',
     '--commit',
     '--push',
-    '--create-pr',
+    '--create-mr',
     '任何一个参数都不授权 merge 或 deploy'
   ], 'ship');
 });

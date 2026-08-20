@@ -18,7 +18,7 @@ description: 初始化或修复业务 Git 仓库的 IDF-SDD 环境，建立本�
 3. 执行 `codegraph version`。如果命令不可用，init 脚本会自动通过 `npm install -g @colbymchenry/codegraph` 安装；第一次安装失败时自动切换华为镜像源 `https://mirrors.tools.huawei.com/npm/` 重试，安装后恢复原始 registry 配置。安装后仍不可用时在报告中如实记录。
 4. 执行 `codecheck --version` 检查 CodeCheck CLI 是否可用。init 脚本会自动通过华为内部 npm 仓库全局安装 `@baize/codecheckcli`（临时配置私有仓库并禁用 SSL 校验，安装后恢复原配置）。安装后仍不可用时在报告中如实记录。
 5. 执行 `codehub-cli --version` 检查 CodeHub CLI 是否可用。init 脚本会自动通过华为内部 npm 仓库全局安装 `@codehub/codehub-cli`（临时配置私有仓库并禁用 SSL 校验，安装后恢复原配置）。安装后仍不可用时在报告中如实记录。
-6. 检查 CodeHub CLI 认证状态（`codehub-cli auth status`）。已登录则跳过。未登录时，提示用户打开一个独立终端（CMD 或 PowerShell），运行 `codehub-cli auth login --w3 --all`（W3 交互式登录，一键登录所有地域），在终端中输入 W3 用户名和密码完成登录。告诉用户完成后回来确认，然后重新检查 `codehub-cli auth status`。不得在当前会话中直接传密码。
+6. 检查 CodeHub CLI 认证状态。先清除可能存在的 `CODEHUB_TOKEN` 环境变量（它会覆盖 W3 认证导致 401），再运行 `codehub-cli auth status`。已登录则跳过。未登录时，询问用户工号，提示用户在独立终端运行 `codehub-cli auth login --w3 --username <工号> --all`（W3 登录，一键登录所有地域），在终端中输入 W3 密码完成登录。告诉用户完成后回来确认，然后重新检查 `codehub-cli auth status`。不得在当前会话中直接传密码。
 7. 执行：
 
    ```bash

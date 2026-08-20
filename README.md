@@ -71,7 +71,7 @@ npm install -g @colbymchenry/codegraph@1.5.0
 /isdd-plan <change-id>
 /isdd-build <change-id>
 /isdd-verify <change-id>
-/isdd-ship <change-id> --create-pr
+/isdd-ship <change-id> --create-mr
 ```
 
 任何时候都可以运行 `/isdd-status`，查看当前变更、阻塞原因、归档缺口和下一条准确命令。

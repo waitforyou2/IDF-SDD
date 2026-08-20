@@ -250,7 +250,7 @@ CodeAgent 无 `/插件名:skill名` 命名空间，skill 通过 name 直接调�
 | `/sdd:plan <id>` | `/sdd-plan <id>` |
 | `/sdd:build <id>` | `/sdd-build <id>` |
 | `/sdd:verify <id>` | `/sdd-verify <id>` |
-| `/sdd:ship <id> --create-pr` | `/sdd-ship <id> --create-pr` |
+| `/sdd:ship <id> --create-mr` | `/sdd-ship <id> --create-mr` |
 | `/sdd:status` | `/sdd-status` |
 
 #### 3.5.3 全局 `/sdd:xxx` 引用替换清单
