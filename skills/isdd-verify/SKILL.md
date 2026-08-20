@@ -31,7 +31,7 @@ description: 将需求符合度和工程质量作为两个独立审查轴，使�
 5. 每条测试、构建、lint、类型、安全或确定性观察，都必须在用作证据前重新执行。记录准确命令、退出结果和关键信号。build 阶段的历史证据只能作为上下文，不能证明当前工作区。
 6. 执行 CodeCheck 门禁检查：
    - init 阶段已通过 npm 全局安装 `@baize/codecheckcli` 确保 codecheck CLI 可用。
-   - **直接用 `--files` 指定变更文件路径**，不要先尝试基于 git diff 自动检测。从 plan.md 的实现步骤或 `git diff --name-only` 获取变更文件列表，直接传给 codecheck。
+   - **直接用 `codecheck fullcheck -f "<file1>,<file2>,..."` 指定变更文件路径执行全量检查**，不要先尝试基于 git diff 自动检测。从 plan.md 的实现步骤或 `git diff --name-only` 获取变更文件列表，用逗号拼接后通过 `-f` 传给 codecheck。例如：`codecheck fullcheck -f "models/kb.py,prompts/templates/analysis_system.md,tests/test_schema.py"`。
    - **只执行一次检查**，不要重复尝试不同方式。
    - **检查到的全部告警都必须修复**，不区分是本次新增还是存量代码遗留。修复后重新执行一次检查确认告警已清除。
    - 记录扫描范围（文件列表）、告警数量、修复结果和最终状态到 verification.md 的 CodeCheck 门禁章节。0 告警时写"无告警"。
