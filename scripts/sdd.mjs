@@ -835,16 +835,19 @@ function validateVerification(root, id) {
 function validateDelivery(root, id) {
   const file = path.join(changeDirectory(root, id), 'delivery.md');
   const errors = validateRequiredSections(file, [
-    '交付标题',
-    '变更摘要',
-    '验证摘要',
-    '风险、发布与回滚',
+    'MR类型',
+    '简要描述',
+    '修改原因',
+    '修改模块',
+    '影响范围',
+    '修改内容',
+    '验证结论',
+    '风险与回滚',
     '归档链接',
     '交付引用'
   ]);
   if (!fs.existsSync(file)) return errors;
   const content = readText(file);
-  if (!/^##\s+\u8bc4\u5ba1\u5173\u6ce8\u70b9\s*$/m.test(content)) errors.push('delivery.md 必须说明人工评审关注点，或明确说明无。');
   if (!/^Delivery-Ref:\s*(?!PENDING\s*$).+$/im.test(content)) errors.push('delivery.md 必须包含值不为 PENDING 的 `Delivery-Ref:` 行。');
   return errors;
 }
