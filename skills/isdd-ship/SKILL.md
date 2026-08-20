@@ -94,50 +94,62 @@ description: 完成 VERIFIED 状态的 IDF-SDD 分支，准备并在获得独立
    node "${CODEAGENT3_PLUGIN_ROOT}/scripts/sdd.mjs" transition --id <id> --to IN_REVIEW --delivery-ref "<MR URL>" --root "${CLAUDE_PROJECT_DIR}"
    ```
 
-10. 创建 MR 后进入监控循环，持续跟踪直到 MR 合入或用户选择停止：
+10. 创建 MR 后自动进入后台监控循环，每 5 分钟检查一次，最多监控 30 分钟（6 轮）。使用 ScheduleWakeup 工具安排定时唤醒，用户无需反复手动触发。
 
-    ### 10a. 检查 MR 状态
+    ### 10a. 监控启动
+
+    创建 MR 并流转到 `IN_REVIEW` 后，立即执行第一轮检查（10b），然后使用 ScheduleWakeup 安排 5 分钟后的下一轮。告知用户："已启动 MR 后台监控，每 5 分钟检查一次，最长监控 30 分钟。有门禁报错或检视意见时会通知你。"
+
+    ### 10b. 每轮检查（唤醒时执行）
+
+    每轮唤醒后依次执行以下检查：
+
+    **第一步：检查 MR 状态**
 
     ```bash
     codehub-cli mr view -p "<org/repo>" <mr-iid>
     ```
 
-    - 状态为 `merged` → MR 已合入，执行第 11 步流转到 DONE。
-    - 状态为 `closed` → MR 被关闭，提示用户处理。
-    - 状态为 `opened` → 继续检查门禁和评审意见。
+    - 状态为 `merged` → MR 已合入，通知用户，执行第 11 步流转到 DONE，结束监控。
+    - 状态为 `closed` → MR 被关闭，通知用户处理，结束监控。
+    - 状态为 `opened` → 继续第二步。
 
-    ### 10b. 检查门禁状态
+    **第二步：检查门禁状态**
 
     ```bash
     codehub-cli mr gate -p "<org/repo>" <mr-iid>
     ```
 
-    - 门禁通过 → 告知用户门禁已通过，继续检查评审意见。
-    - 门禁失败 → 展示失败详情，提示用户是否要自动修复。用户同意后：
-      - 运行 `codehub-cli mr pipeline -p "<org/repo>" <mr-iid>` 查看流水线详情。
-      - 运行 `codehub-cli pipeline failure <pipeline-id>` 诊断 CodeCheck 问题。
-      - 根据诊断结果修复代码。
-      - 重新运行交付前检查确认修复有效。
-      - `git add` + `git commit` + push 回已有 MR（非 fork：`git push`；fork：`git push origin <分支>`）。
-      - 回到 10a 继续监控。
+    - 门禁通过 → 继续第三步。
+    - 门禁失败 → 通知用户门禁失败，提供流水线链接（从 `codehub-cli mr pipeline -p "<org/repo>" <mr-iid>` 获取 URL），让用户自行查看日志。不尝试自动修复门禁问题。询问用户是否继续监控：
+      - 继续 → ScheduleWakeup 安排下一轮。
+      - 停止 → 保持 `IN_REVIEW` 状态，结束监控。
 
-    ### 10c. 检查评审意见
+    **第三步：检查评审意见**
 
     ```bash
     codehub-cli mr review list -p "<org/repo>" <mr-iid>
     ```
 
-    - 无未处理的评审意见 → 告知用户当前无新意见，询问是否继续等待。
-    - 有未处理的评审意见 → 展示每条意见的文件、行号、内容和严重级别，提示用户是否要自动修复。用户同意后：
-      - 逐条分析评审意见，判断是否需要修改代码。
-      - 用 Edit/Write 修复本地代码。
-      - 用 `codehub-cli mr review reply -p "<org/repo>" <mr-iid> <review-id> --body "<回复内容>"` 回复每条意见。
-      - 修复完成后重新运行交付前检查确认修复有效。
-      - `git add` + `git commit` + push 回已有 MR。
-      - 回到 10a 继续监控。
-    - 用户选择不修复时，保留评审意见不处理，告知用户需在 CodeHub 上手动处理。
+    - 无未处理的评审意见 → 安排下一轮 ScheduleWakeup（如未达 30 分钟上限）。
+    - 有未处理的评审意见 → **停止后台监控**，展示每条意见的文件、行号、内容和严重级别，询问用户是否要自动修复：
+      - **用户同意修复**：
+        - 逐条分析评审意见，判断是否需要修改代码。
+        - 用 Edit/Write 修复本地代码。
+        - 用 `codehub-cli mr review reply -p "<org/repo>" <mr-iid> <review-id> --body "<回复内容>"` 回复每条意见。
+        - 修复完成后重新运行交付前检查确认修复有效。
+        - `git add` + `git commit` + push 回已有 MR（非 fork：`git push`；fork：`git push origin <分支>`）。
+        - 通知用户修复已完成，询问是否继续后台监控 → 继续则重新启动 10a 监控循环。
+      - **用户拒绝修复** → 保持 `IN_REVIEW` 状态，告知用户需在 CodeHub 上手动处理，结束监控。
 
-    每轮监控循环结束后，告知用户当前 MR 状态摘要（状态、门禁、未处理评审意见数），询问是否继续下一轮监控。用户选择停止时保持 `IN_REVIEW` 状态并停止。
+    ### 10c. 监控结束条件
+
+    以下任一条件满足时停止监控：
+    - MR 状态为 `merged` → 执行第 11 步。
+    - MR 状态为 `closed` → 通知用户。
+    - 门禁失败且用户选择停止。
+    - 发现未处理评审意见（暂停监控等待用户处理）。
+    - 达到 30 分钟最大监控时长 → 通知用户监控已超时，告知当前 MR 状态摘要（状态、门禁、未处理评审意见数），询问用户是否重新启动一轮监控。
 
 11. MR 已合入后，流转到 DONE：
 
@@ -157,7 +169,9 @@ description: 完成 VERIFIED 状态的 IDF-SDD 分支，准备并在获得独立
 - `IN_REVIEW` 有真实 MR URL，`DONE` 有已合入 MR 引用。
 - MR 创建前已通过 CodeHub 认证检查。
 - fork/非 fork 模式已自动判断并正确处理。
-- MR 监控循环中每轮都向用户报告状态摘要。
+- MR 监控循环使用 ScheduleWakeup 后台定时检查，无需用户反复手动触发。
+- 门禁失败时只提供流水线链接给用户查看，不自动修复门禁问题。
+- 发现检视意见时停止监控并询问用户是否修复，修复后询问是否继续监控。
 
 ## 禁止行为
 
