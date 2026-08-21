@@ -131,7 +131,7 @@ test('runs the complete repository and change lifecycle with durable artifacts',
     result = cli(root, fakeCodeGraph, ['artifact', 'verification', '--id', 'REQ-101']);
     assert.equal(result.status, 0, result.stderr);
     const verificationFile = path.join(directory, 'verification.md');
-    replaceComments(verificationFile, 'Verified executed evidence.');
+    replaceComments(verificationFile, '无告警。Verified executed evidence.');
     const verification = fs.readFileSync(verificationFile, 'utf8').replace('Verdict: PENDING', 'Verdict: PASS');
     fs.writeFileSync(verificationFile, verification, 'utf8');
     result = cli(root, fakeCodeGraph, ['transition', '--id', 'REQ-101', '--to', 'VERIFIED']);
@@ -141,13 +141,11 @@ test('runs the complete repository and change lifecycle with durable artifacts',
     assert.equal(result.status, 0, result.stderr);
     const deliveryFile = path.join(directory, 'delivery.md');
     replaceComments(deliveryFile, 'Verified delivery content.');
-    const delivery = fs.readFileSync(deliveryFile, 'utf8').replace('Delivery-Ref: PENDING', 'Delivery-Ref: https://example.test/pr/101');
-    fs.writeFileSync(deliveryFile, delivery, 'utf8');
 
     const implementationFile = path.join(root, 'src', 'feature.js');
     const verifiedImplementation = fs.readFileSync(implementationFile, 'utf8');
     fs.writeFileSync(implementationFile, `${verifiedImplementation}// changed after verification\n`, 'utf8');
-    result = cli(root, fakeCodeGraph, ['transition', '--id', 'REQ-101', '--to', 'IN_REVIEW', '--delivery-ref', 'https://example.test/pr/101']);
+    result = cli(root, fakeCodeGraph, ['transition', '--id', 'REQ-101', '--to', 'DONE', '--delivery-ref', 'https://example.test/pr/101']);
     assert.notEqual(result.status, 0);
     assert.match(result.stderr, /验证后发生了变化/);
 
@@ -157,11 +155,11 @@ test('runs the complete repository and change lifecycle with durable artifacts',
     result = cli(root, fakeCodeGraph, ['status', '--id', 'REQ-101']);
     assert.equal(parseJson(result.stdout).change.state, 'VERIFIED');
 
-    result = cli(root, fakeCodeGraph, ['transition', '--id', 'REQ-101', '--to', 'IN_REVIEW', '--delivery-ref', 'https://example.test/pr/101']);
+    result = cli(root, fakeCodeGraph, ['transition', '--id', 'REQ-101', '--to', 'DONE', '--delivery-ref', 'https://example.test/pr/101']);
     assert.equal(result.status, 0, result.stderr);
 
-    result = cli(root, fakeCodeGraph, ['transition', '--id', 'REQ-101', '--to', 'DONE', '--merged', '--accepted-ref', 'merge:abc123']);
-    assert.equal(result.status, 0, result.stderr);
+    // transition DONE 自动更新 delivery.md 的 Delivery-Ref
+    assert.match(fs.readFileSync(deliveryFile, 'utf8'), /Delivery-Ref:\s*https:\/\/example\.test\/pr\/101/);
 
     result = cli(root, fakeCodeGraph, ['validate']);
     assert.equal(result.status, 0, result.stderr);
@@ -249,7 +247,7 @@ test('rejects verification that collapses the two review axes', () => {
     result = cli(root, fakeCodeGraph, ['artifact', 'verification', '--id', 'REQ-104']);
     assert.equal(result.status, 0, result.stderr);
     const verificationFile = path.join(directory, 'verification.md');
-    replaceComments(verificationFile);
+    replaceComments(verificationFile, '无告警。Verified evidence.');
     const verification = fs.readFileSync(verificationFile, 'utf8')
       .replace('### 工程质量', '### 综合评审')
       .replace('Verdict: PENDING', 'Verdict: PASS');
@@ -258,6 +256,50 @@ test('rejects verification that collapses the two review axes', () => {
     result = cli(root, fakeCodeGraph, ['transition', '--id', 'REQ-104', '--to', 'VERIFIED']);
     assert.notEqual(result.status, 0);
     assert.match(result.stderr, /工程质量审查/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('rejects verification that skips codecheck alerts with bypass language', () => {
+  const { root, fakeCodeGraph } = fixture();
+  try {
+    let result = cli(root, fakeCodeGraph, ['init']);
+    assert.equal(result.status, 0, result.stderr);
+    replaceComments(path.join(root, 'docs', 'isdd', 'repository.md'));
+
+    result = cli(root, fakeCodeGraph, ['change', 'create', '--id', 'REQ-105', '--title', 'Skip codecheck', '--mode', 'standard']);
+    assert.equal(result.status, 0, result.stderr);
+    const directory = path.join(root, 'docs', 'isdd', 'changes', 'REQ-105');
+    replaceComments(path.join(directory, 'spec.md'));
+    result = cli(root, fakeCodeGraph, ['transition', '--id', 'REQ-105', '--to', 'DEFINED']);
+    assert.equal(result.status, 0, result.stderr);
+
+    result = cli(root, fakeCodeGraph, ['artifact', 'plan', '--id', 'REQ-105']);
+    assert.equal(result.status, 0, result.stderr);
+    const planFile = path.join(directory, 'plan.md');
+    replaceComments(planFile);
+    fs.writeFileSync(planFile, fs.readFileSync(planFile, 'utf8').replaceAll('- [ ]', '- [x]'), 'utf8');
+    result = cli(root, fakeCodeGraph, ['transition', '--id', 'REQ-105', '--to', 'PLANNED']);
+    assert.equal(result.status, 0, result.stderr);
+    result = cli(root, fakeCodeGraph, ['transition', '--id', 'REQ-105', '--to', 'BUILT']);
+    assert.equal(result.status, 0, result.stderr);
+
+    result = cli(root, fakeCodeGraph, ['artifact', 'verification', '--id', 'REQ-105']);
+    assert.equal(result.status, 0, result.stderr);
+    const verificationFile = path.join(directory, 'verification.md');
+    replaceComments(verificationFile);
+    let verification = fs.readFileSync(verificationFile, 'utf8')
+      .replace('Verdict: PENDING', 'Verdict: PASS');
+    verification = verification.replace(
+      /## CodeCheck 门禁[\s\S]*?(?=##\s)/,
+      '## CodeCheck 门禁\n\n告警2条，已忽略，不影响功能。\n\n'
+    );
+    fs.writeFileSync(verificationFile, verification, 'utf8');
+
+    result = cli(root, fakeCodeGraph, ['transition', '--id', 'REQ-105', '--to', 'VERIFIED']);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /绕过措辞/);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

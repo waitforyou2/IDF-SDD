@@ -26,7 +26,6 @@ const STATES = [
   'PLANNED',
   'BUILT',
   'VERIFIED',
-  'IN_REVIEW',
   'DONE'
 ];
 
@@ -35,9 +34,8 @@ const ALLOWED_TRANSITIONS = new Map([
   ['DEFINED', new Set(['PLANNED'])],
   ['PLANNED', new Set(['BUILT', 'DRAFT'])],
   ['BUILT', new Set(['VERIFIED', 'PLANNED'])],
-  ['VERIFIED', new Set(['IN_REVIEW', 'VERIFIED'])],
-  ['IN_REVIEW', new Set(['DONE', 'PLANNED'])],
-  ['DONE', new Set()]
+  ['VERIFIED', new Set(['DONE', 'VERIFIED'])],
+  ['DONE', new Set(['PLANNED'])]
 ]);
 
 const NEXT_COMMAND = {
@@ -46,7 +44,6 @@ const NEXT_COMMAND = {
   PLANNED: '/isdd-build',
   BUILT: '/isdd-verify',
   VERIFIED: '/isdd-ship',
-  IN_REVIEW: '等待人工评审、合并，或使用 /isdd-ship --complete',
   DONE: null
 };
 
@@ -669,7 +666,7 @@ function createArtifact(root, type, flags) {
   const definitions = {
     plan: { file: 'plan.md', template: 'plan.md', states: ['DEFINED', 'PLANNED'] },
     verification: { file: 'verification.md', template: 'verification.md', states: ['BUILT', 'PLANNED', 'VERIFIED'] },
-    delivery: { file: 'delivery.md', template: 'delivery.md', states: ['VERIFIED', 'IN_REVIEW'] }
+    delivery: { file: 'delivery.md', template: 'delivery.md', states: ['VERIFIED'] }
   };
   const definition = definitions[type];
   if (!definition) fail('交付件类型必须是 plan、verification 或 delivery。');
@@ -829,6 +826,13 @@ function validateVerification(root, id) {
   if (!/^###\s+\u5de5\u7a0b\u8d28\u91cf\s*$/m.test(content)) errors.push('verification.md 必须包含独立的工程质量审查。');
   if (!/^Verdict:\s*PASS\s*$/im.test(content)) errors.push('verification.md 必须包含完全匹配的 `Verdict: PASS` 行。');
   if (/\|\s*FAIL\s*\|/i.test(content)) errors.push('verification.md 的验收证据表中仍有失败项。');
+  const codecheckContent = (sectionMap(content).get('CodeCheck 门禁') || '').replace(/<!--[\s\S]*?-->/g, '').trim();
+  if (/忽略|跳过|豁免|不影响|误报|无需修复|暂不处理/.test(codecheckContent)) {
+    errors.push('verification.md 的 CodeCheck 门禁章节包含绕过措辞（忽略/跳过/豁免/误报/不影响等），所有告警必须修复，不得跳过。');
+  }
+  if (codecheckContent && !/无告警|0\s*告警|告警.*已修复|全部.*修复|告警已清除/.test(codecheckContent)) {
+    errors.push('verification.md 的 CodeCheck 门禁章节必须明确记录"无告警"或"全部已修复"。');
+  }
   return errors;
 }
 
@@ -886,7 +890,7 @@ function validateChangeForState(root, id, state) {
   if (rank(state) >= rank('DEFINED')) errors.push(...validateSpec(root, id));
   if (rank(state) >= rank('PLANNED')) errors.push(...validatePlan(root, id, rank(state) >= rank('BUILT')));
   if (rank(state) >= rank('VERIFIED')) errors.push(...validateVerification(root, id));
-  if (rank(state) >= rank('IN_REVIEW')) errors.push(...validateDelivery(root, id));
+  if (rank(state) >= rank('DONE')) errors.push(...validateDelivery(root, id));
   return errors;
 }
 
@@ -901,9 +905,9 @@ function transition(root, flags) {
     fail(`不允许从 ${current} 转换到 ${target}。`, { allowed: [...ALLOWED_TRANSITIONS.get(current)] });
   }
 
-  if (target === 'IN_REVIEW') {
+  if (target === 'DONE') {
     const deliveryRef = String(flags['delivery-ref'] || '').trim();
-    if (!deliveryRef) fail('创建获授权的交付记录后，转换到 IN_REVIEW 必须提供 --delivery-ref。');
+    if (!deliveryRef) fail('创建 MR 后，转换到 DONE 必须提供 --delivery-ref <MR URL>。');
     const currentFingerprint = changeFingerprint(root, change.metadata.base_ref);
     if (!change.metadata.verified_fingerprint || currentFingerprint.value !== change.metadata.verified_fingerprint) {
       fail('实现文件在验证后发生了变化。请重新执行 /isdd-verify 刷新指纹后再交付。', {
@@ -913,13 +917,15 @@ function transition(root, flags) {
       });
     }
     change.metadata.delivery_ref = deliveryRef;
-  }
-  if (target === 'DONE') {
-    const acceptedRef = String(flags['accepted-ref'] || change.metadata.delivery_ref || '').trim();
-    if (!flags.merged || !acceptedRef) {
-      fail('转换到 DONE 必须提供 --merged 和 --accepted-ref（或已有的 delivery_ref）。');
+    const deliveryFile = path.join(changeDirectory(root, id), 'delivery.md');
+    if (fs.existsSync(deliveryFile)) {
+      const deliveryContent = readText(deliveryFile);
+      const updatedContent = deliveryContent.replace(
+        /^Delivery-Ref:\s*.*$/m,
+        `Delivery-Ref: ${deliveryRef}`
+      );
+      if (updatedContent !== deliveryContent) writeText(deliveryFile, updatedContent);
     }
-    change.metadata.delivery_ref = acceptedRef;
   }
 
   const errors = validateChangeForState(root, id, target);
@@ -1053,7 +1059,7 @@ function help() {
       classify: 'classify --text <request> [--files <n>] [--impact low|medium|high]',
       change_create: 'change create --title <title> [--id <id>] [--mode lite|standard|strict]',
       artifact: 'artifact <plan|verification|delivery> --id <id>',
-      transition: 'transition --id <id> --to <state> [--delivery-ref <ref>] [--merged --accepted-ref <ref>]',
+      transition: 'transition --id <id> --to <state> [--delivery-ref <ref>]',
       block: 'block --id <id> --reason <reason>',
       status: 'status [--id <id>]',
       validate: 'validate [--repo|--id <id>]'
