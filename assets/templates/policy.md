@@ -34,3 +34,11 @@
 - 保留所有无关工作区变更。
 - 不得绕过 Hook、测试、评审或权限来推进状态。
 - 没有 MR 交付引用时，不得把变更标记为 `DONE`。
+
+## DT 编写规范
+
+- 测试方法名以 `test` 开头（如 `testCalculateTotal`、`test_login_with_invalid_credentials`）。
+- 测试方法名长度不得超过 64 个字符。
+- 一个被测类对应一个测试文件（如 `UserService` → `UserServiceTest` / `test_user_service.py`）。
+- 增量代码（本次变更新增或修改的代码行）的单元测试覆盖率不得低于 80%。
+- 禁止无断言测试、try-catch 吞异常的断言、以及永远为真的断言。
