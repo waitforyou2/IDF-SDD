@@ -9,6 +9,7 @@ updated_at: "{{UPDATED_AT}}"
 base_ref: "{{BASE_REF}}"
 verified_fingerprint: ""
 delivery_ref: ""
+e2e_issue: "{{E2E_ISSUE}}"
 blocked: "false"
 block_reason: ""
 ---

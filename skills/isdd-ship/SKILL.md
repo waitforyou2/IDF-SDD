@@ -21,7 +21,7 @@ description: 完成 VERIFIED 状态的 IDF-SDD 分支，准备并在获得独立
    node "${CODEAGENT3_PLUGIN_ROOT}/scripts/sdd.mjs" artifact delivery --id <id> --root "${CLAUDE_PROJECT_DIR}"
    ```
 
-4. 填写 `delivery.md`，按模板格式依次完成：MR 类型（feature/bugfix/refactor/docs/chore）、简要描述、修改原因、修改模块、影响范围、修改内容（按文件列出变更）、验证结论、风险与回滚、归档链接。影响生产的变更还必须记录分阶段发布、监控指标和阈值、适用时的功能开关负责人，以及可执行回滚步骤；仅本地变更需要说明为什么这些内容不适用。在外部评审对象创建前保留 `Delivery-Ref: PENDING`。
+4. 填写 `delivery.md`，按模板格式依次完成：需求单号（从 `spec.md` 的 `e2e_issue` 字段获取）、MR 类型（feat/fix/refactor/docs/chore/test/perf/style/ci）、简要描述、修改原因、修改模块、影响范围、修改内容（按文件列出变更）、验证结论、风险与回滚、归档链接。影响生产的变更还必须记录分阶段发布、监控指标和阈值、适用时的功能开关负责人，以及可执行回滚步骤；仅本地变更需要说明为什么这些内容不适用。在外部评审对象创建前保留 `Delivery-Ref: PENDING`。
 5. 重新运行成本最低的交付前检查，确认分支仍与 `verification.md` 一致。实现一致性以内容指纹为准，不得创建第二套验证结论。
 6. 分别处理授权参数：
    - `--commit` 只授权暂存已确认的范围内路径并创建一次提交。
@@ -62,6 +62,7 @@ description: 完成 VERIFIED 状态的 IDF-SDD 分支，准备并在获得独立
    - **标题**：固定格式 `【IDF-SDD】【<修改类型>】<简要描述>`。修改类型遵循 Conventional Commits 规范：`feat`（新功能）、`fix`（缺陷修复）、`refactor`（重构）、`docs`（文档）、`chore`（构建/工具）、`test`（测试）、`perf`（性能）、`style`（格式）、`ci`（CI 配置）。从 delivery.md 的【MR类型】字段取修改类型，从【简要描述】取描述内容。
    - **描述**：直接用 `delivery.md` 作为 MR 描述文件，通过 `--no-auto-template -F delivery.md` 传入。不创建临时描述文件，不修改 delivery.md 内容。
    - **指派人/评审人**：默认 `--recommend-assignee`；用户明确指定时改用 `--assignees`/`--reviewers`。
+   - **E2E 单号**：从 `spec.md` 的 frontmatter `e2e_issue` 字段获取，传入 `--e2e-issues`。字段为空时询问用户提供；用户确认没有单号时可跳过。
    - **Squash**：默认不开 `--squash`；用户明确要求时再加 `--squash --squash-commit-message "【IDF-SDD】【<修改类型>】<简要描述>"`。
 
    非 fork 模式基础命令：
@@ -72,7 +73,8 @@ description: 完成 VERIFIED 状态的 IDF-SDD 分支，准备并在获得独立
      --target-branch "<目标分支>" \
      --title "【IDF-SDD】【<修改类型>】<简要描述>" \
      --no-auto-template -F delivery.md \
-     --recommend-assignee
+     --recommend-assignee \
+     --e2e-issues "<E2E单号>"
    ```
 
    fork 模式基础命令（先 push 再建 MR）：
@@ -85,7 +87,8 @@ description: 完成 VERIFIED 状态的 IDF-SDD 分支，准备并在获得独立
      --target-project-id "<主仓库项目ID>" \
      --title "【IDF-SDD】【<修改类型>】<简要描述>" \
      --no-auto-template -F delivery.md \
-     --recommend-assignee
+     --recommend-assignee \
+     --e2e-issues "<E2E单号>"
    ```
 
    创建成功后，从输出中提取 MR URL。
@@ -139,8 +142,20 @@ description: 完成 VERIFIED 状态的 IDF-SDD 分支，准备并在获得独立
     codehub-cli mr gate -p "<org/repo>" <mr-iid>
     ```
 
-    - 门禁通过 → 继续第三步。
-    - 门禁失败 → 通知用户门禁失败，提供流水线链接（从 `codehub-cli mr pipeline -p "<org/repo>" <mr-iid>` 获取 URL），让用户自行查看日志。不尝试自动修复门禁问题。询问用户是否继续监控：
+    检查门禁结果中以下关键项：
+    - `must_relate_issue`：仓库是否要求 MR 必须关联 issue/DTS 单号。
+    - `all_issues_passed`：所有关联的 issue 检查是否通过。
+    - `e2e_check_passed`：E2E 检查是否通过。
+
+    - 门禁全部通过 → 继续第三步。
+    - **e2e 单号关联失败**（`all_issues_passed=false` 或 `e2e_check_passed=false`）→ 单号可能有误。用 `codehub-cli mr view -p "<org/repo>" <mr-iid>` 查看 `related_issues` 字段确认当前关联的单号。告知用户 e2e 单号门禁未通过，要求用户提供正确的单号。用户提供后：
+      1. 更新 `spec.md` 的 `e2e_issue` 字段为新单号。
+      2. 更新 `delivery.md` 的需求单号章节。
+      3. 用 `codehub-cli mr update -p "<org/repo>" <mr-iid> --e2e-issues "<新单号>"` 更新 MR 关联单号。
+      4. 重新走 verify（`/isdd-verify`）刷新指纹。
+      5. 重新执行 ship 流程：transition DONE → commit + push 文档变更到已有 MR 分支。
+      6. 重新检查门禁，继续监控。
+    - **其他门禁失败**（流水线/CodeCheck 等）→ 通知用户门禁失败，提供流水线链接（从 `codehub-cli mr pipeline -p "<org/repo>" <mr-iid>` 获取 URL），让用户自行查看日志。不尝试自动修复门禁问题。询问用户是否继续监控：
       - 继续 → ScheduleWakeup 安排下一轮。
       - 停止 → 保持 `DONE` 状态，结束监控。
 

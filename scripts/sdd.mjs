@@ -148,6 +148,7 @@ function serializeFrontmatter(metadata, body) {
     'base_ref',
     'verified_fingerprint',
     'delivery_ref',
+    'e2e_issue',
     'blocked',
     'block_reason'
   ];
@@ -641,19 +642,22 @@ function createChange(root, flags) {
   ensureDirectory(directory);
   const now = isoNow();
   const baseRef = gitValue(root, ['rev-parse', 'HEAD'], 'unborn');
+  const e2eIssue = String(flags['e2e'] || '').trim();
   copyTemplate('spec.md', path.join(directory, 'spec.md'), {
     ID: id,
     TITLE: title,
     MODE: mode,
     CREATED_AT: now,
     UPDATED_AT: now,
-    BASE_REF: baseRef
+    BASE_REF: baseRef,
+    E2E_ISSUE: e2eIssue
   });
   emit({
     ok: true,
     action: 'change-create',
     id,
     mode,
+    e2e_issue: e2eIssue || null,
     state: 'DRAFT',
     directory,
     next_command: `/isdd-define ${id}`
@@ -839,6 +843,7 @@ function validateVerification(root, id) {
 function validateDelivery(root, id) {
   const file = path.join(changeDirectory(root, id), 'delivery.md');
   const errors = validateRequiredSections(file, [
+    '需求单号',
     'MR类型',
     '简要描述',
     '修改原因',
@@ -989,6 +994,7 @@ function status(root, flags) {
         blocked: change.metadata.blocked === 'true',
         block_reason: change.metadata.block_reason,
         delivery_ref: change.metadata.delivery_ref,
+        e2e_issue: change.metadata.e2e_issue || null,
         verified_fingerprint: change.metadata.verified_fingerprint,
         next_command: NEXT_COMMAND[change.metadata.state]
       },
@@ -1057,7 +1063,7 @@ function help() {
     commands: {
       init: 'init [--root <path>] [--skip-codegraph] [--force]',
       classify: 'classify --text <request> [--files <n>] [--impact low|medium|high]',
-      change_create: 'change create --title <title> [--id <id>] [--mode lite|standard|strict]',
+      change_create: 'change create --title <title> [--id <id>] [--mode lite|standard|strict] [--e2e <E2E单号>]',
       artifact: 'artifact <plan|verification|delivery> --id <id>',
       transition: 'transition --id <id> --to <state> [--delivery-ref <ref>]',
       block: 'block --id <id> --reason <reason>',

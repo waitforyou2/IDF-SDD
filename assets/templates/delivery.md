@@ -1,5 +1,9 @@
 # 交付记录
 
+## 需求单号
+
+<!-- E2E PBI 问题编号，如 US20260514051844。从 spec.md 的 e2e_issue 字段获取。 -->
+
 ## MR类型
 
 <!-- 遵循 Conventional Commits：feat / fix / refactor / docs / chore / test / perf / style / ci -->
