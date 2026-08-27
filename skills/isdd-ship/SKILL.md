@@ -30,29 +30,36 @@ description: 完成 VERIFIED 状态的 IDF-SDD 分支，准备并在获得独立
    - 任何一个参数都不授权 merge 或 deploy。
    缺少授权时必须询问，不得推断。混合工作区不得使用宽泛的全量暂存路径。
 7. 未授权外部发布时，完成 `delivery.md`，展示可选下一步，保持 `VERIFIED` 状态并停止。不得把删除分支或 worktree 当成默认收尾动作。
-8. 授权创建 MR 后，按以下步骤执行两提交流程：
+8. 授权创建 MR 后，按以下步骤执行：
 
    ### 8a. 认证检查
 
    - 清除可能存在的 `CODEHUB_TOKEN` 环境变量（它会覆盖 W3 认证导致 401）：`unset CODEHUB_TOKEN`
    - 运行 `codehub-cli auth status` 检查认证状态。
-   - 未认证时，询问用户工号，然后运行 `codehub-cli auth login --w3 --username <工号> --all`。该命令在非交互模式下需要用户在独立终端输入密码，提示用户完成后回来确认，再重新检查认证状态。不在当前会话中传密码。
+   - 未认证时，从 `whoami` 或 `git config user.name` 获取用户工号，运行 `codehub-cli auth login --w3 --username <工号> --all`。该命令在非交互模式下需要用户在独立终端输入密码，提示用户完成后回来确认，再重新检查认证状态。不在当前会话中传密码。
    - 认证失败或 token 过期时，参考[CodeHub CLI 错误码参考](../../references/codehub-cli-error-codes.md)排查。
 
-   ### 8b. fork 模式自动判断
+   ### 8b. 重复 MR 检测
+
+   创建 MR 前先检查是否已有可复用的 MR：
+
+   1. 从 `spec.md` 的 `delivery_ref` 字段取 MR URL。
+   2. 为空或为空字符串 → 第一次创建，继续 8c。
+   3. 有值 → 从 URL 解析 MR IID，运行 `codehub-cli mr view -p "<org/repo>" <mr-iid> --format json` 检查：
+      - **状态为 `opened` 且 `source_branch` == 当前分支** → 复用已有 MR，不重复创建。直接 push 代码到已有分支（MR 自动更新），然后用 `codehub-cli mr update -p "<org/repo>" <mr-iid> --title "<新标题>" -F delivery.md` 更新 MR 描述。跳到 8e。
+      - **状态为 `opened` 但分支不一致** → 旧 MR 已失效，新建 MR。继续 8c。
+      - **状态为 `merged` 或 `closed`** → 已结束，新建 MR。继续 8c。
+      - **URL 无效或查询失败** → 询问用户是否已有 MR，用户提供 MR URL 或确认新建。
+
+   ### 8c. fork 模式判断与提交推送
 
    - 运行 `git remote -v` 获取所有 remote URL。
    - 解析 remote URL 中是否包含当前用户工号（`git config user.name` 或 `whoami`）。
    - **fork 模式**（remote URL 含用户工号）：需要先 push 到 fork 仓库，再用 `codehub-cli mr create --target-project-id <父仓库ID>` 创建 MR 到主仓库。`--target-project-id` 通过 `codehub-cli project view -p "<主仓库路径>"` 获取。
    - **非 fork 模式**（remote URL 不含用户工号）：直接用 `codehub-cli mr create`，push 和 MR 创建一步完成。
    - 无法判断时，询问用户当前是 fork 还是直接仓库。
-
-   ### 8c. 第一个提交：推送代码
-
    - 暂存已确认的范围内路径并创建提交（`--commit` 授权范围）。
    - 推送分支到远程（`--push` 授权范围）。
-   - 非 fork 模式下，push 和 MR 创建可由 `codehub-cli mr create` 一步完成。
-   - fork 模式下，先 `git push origin "<当前分支>"`，再创建 MR。
 
    ### 8d. 创建 MR
 
@@ -93,20 +100,15 @@ description: 完成 VERIFIED 状态的 IDF-SDD 分支，准备并在获得独立
 
    创建成功后，从输出中提取 MR URL。
 
-   ### 8e. 流转状态并自动同步文档
+   ### 8e. 流转状态并推送文档状态
 
-   创建 MR 得到 MR URL 后，立即流转到 DONE。工具会自动完成以下操作：
-   - 校验实现文件指纹与验证阶段一致（防止篡改）。
-   - 更新 `spec.md` frontmatter：`state → DONE`，`delivery_ref → <MR URL>`。
-   - 更新 `delivery.md`：`Delivery-Ref: PENDING → Delivery-Ref: <MR URL>`。
+   创建 MR 得到 MR URL 后（或复用已有 MR 时），立即流转到 DONE：
 
    ```bash
    node "${CODEAGENT3_PLUGIN_ROOT}/scripts/sdd.mjs" transition --id <id> --to DONE --delivery-ref "<MR URL>" --root "${CLAUDE_PROJECT_DIR}"
    ```
 
-   ### 8f. 第二个提交：推送文档状态变更
-
-   transition 完成后，文档状态已更新（spec.md 和 delivery.md），但这些变更只在本地。必须立即创建第二个提交并推送到同一个 MR 分支：
+   transition 完成后，文档状态已更新（spec.md 和 delivery.md），创建提交并推送：
 
    ```bash
    git add docs/isdd/changes/<id>/spec.md docs/isdd/changes/<id>/delivery.md
@@ -114,7 +116,7 @@ description: 完成 VERIFIED 状态的 IDF-SDD 分支，准备并在获得独立
    git push origin "<当前分支>"
    ```
 
-   推送后告知用户：MR 已创建，文档状态已同步推送，MR 包含两个提交（代码实现 + 文档状态）。MR 进入人工评审阶段。
+   推送后告知用户：MR 已就绪，文档状态已同步推送。MR 进入人工评审阶段。
 
 9. 推送文档后自动进入后台监控循环，每 5 分钟检查一次，最多监控 30 分钟（6 轮）。使用 ScheduleWakeup 工具安排定时唤醒，用户无需反复手动触发。文档状态已是 DONE，监控的目的是发现检视意见和门禁问题，触发返工或通知用户。
 
@@ -162,19 +164,29 @@ description: 完成 VERIFIED 状态的 IDF-SDD 分支，准备并在获得独立
     **第三步：检查评审意见**
 
     ```bash
-    codehub-cli mr review list -p "<org/repo>" <mr-iid>
+    codehub-cli mr review list -p "<org/repo>" <mr-iid> --format json
     ```
 
-    - 无未处理的评审意见 → 安排下一轮 ScheduleWakeup（如未达 30 分钟上限）。
-    - 有未处理的评审意见 → **停止后台监控**，展示每条意见的文件、行号、内容和严重级别，询问用户是否要修复：
-      - **用户同意修复**：
-        - 先回退状态：`transition --id <id> --to PLANNED`。
-        - 逐条分析评审意见，判断是否需要修改代码。
-        - 用 Edit/Write 修复本地代码。
+    用 `--format json` 获取结构化数据。从返回结果中筛选 `resolved` 为 `false` 的评审意见。每条意见提取以下字段：
+    - `id`：评审意见 ID（用于回复）
+    - `file_path`：文件路径
+    - `line`：行号
+    - `severity`：严重级别（suggestion/minor/major）
+    - `body`：意见内容
+
+    - 无未处理的评审意见（`resolved=false` 为空）→ 安排下一轮 ScheduleWakeup（如未达 30 分钟上限）。
+    - 有未处理的评审意见 → **停止后台监控**，展示每条意见的文件、行号、严重级别和内容，判断返工规模：
+      - **小问题修复**（代码风格、CodeCheck 告警、简单逻辑错误等，不改变设计方案）：
+        - 流转到 `VERIFIED`：`transition --id <id> --to VERIFIED`（`delivery_ref` 保留，MR 仍然有效）。
+        - 逐条修复本地代码。
         - 用 `codehub-cli mr review reply -p "<org/repo>" <mr-iid> <review-id> --body "<回复内容>"` 回复每条意见。
-        - 修复完成后重新运行 verify（`/isdd-verify`）刷新指纹。
-        - 重新执行 ship 流程：transition DONE → commit + push 文档变更到已有 MR 分支。
+        - 重新运行 `/isdd-verify` 刷新指纹。
+        - 重新执行 ship 流程：ship 会检测到 `delivery_ref` 有值且 MR 为 `opened` → 复用已有 MR（push 代码 + `mr update` 更新描述），不重复创建。
         - 通知用户修复已完成，询问是否继续后台监控 → 继续则重新启动 9a 监控循环。
+      - **全流程返工**（评审意见提出不同实现方式，需要重新设计需求）：
+        - 流转到 `DEFINED`：`transition --id <id> --to DEFINED`（`delivery_ref` 被清空，旧 MR 失效）。
+        - 告知用户需要重新走 define → plan → build → verify → ship 完整流程。
+        - 用户完成重新开发后，ship 会检测到 `delivery_ref` 为空 → 新建 MR。
       - **用户拒绝修复** → 保持 `DONE` 状态，告知用户需在 CodeHub 上手动处理，结束监控。
 
     ### 9c. 监控结束条件
@@ -196,11 +208,11 @@ description: 完成 VERIFIED 状态的 IDF-SDD 分支，准备并在获得独立
 - `DONE` 状态有真实 MR URL 作为 delivery_ref。
 - MR 创建前已通过 CodeHub 认证检查。
 - fork/非 fork 模式已自动判断并正确处理。
-- MR 包含两个提交：第一个是代码实现，第二个是文档状态同步。
 - 文档状态变更（spec.md + delivery.md）已推送到 MR 分支，不存在仅本地可见的幽灵状态。
+- 创建 MR 前已检查 `delivery_ref`，不重复创建已有 MR。
 - 检视意见监控循环使用 ScheduleWakeup 后台定时检查，无需用户反复手动触发。
 - 门禁失败时只提供流水线链接给用户查看，不自动修复门禁问题。
-- 发现检视意见时停止监控并询问用户是否修复，修复后走 DONE→PLANNED 返工再重新 ship。
+- 发现检视意见时根据返工规模选择 `DONE → VERIFIED`（小问题）或 `DONE → DEFINED`（全流程返工）。
 
 ## 禁止行为
 

@@ -13,7 +13,7 @@ description: 将需求符合度和工程质量作为两个独立审查轴，使�
 
 ## 执行流程
 
-1. 解析 change id，要求当前状态为 `BUILT`。阅读 `spec.md`、`plan.md`、`docs/isdd/policy.md`、`docs/isdd/repository.yaml`、[CodeGraph 集成规范](../../references/codegraph.md)和[归档契约](../../references/artifacts.md)。
+1. 解析 change id，要求当前状态为 `BUILT` 或 `VERIFIED`（`VERIFIED` 表示重新验证，用于验证后文件变更需刷新指纹的场景）。阅读 `spec.md`、`plan.md`、`docs/isdd/policy.md`、`docs/isdd/repository.yaml`、[CodeGraph 集成规范](../../references/codegraph.md)和[归档契约](../../references/artifacts.md)。
 2. 影响分析前同步并检查 CodeGraph：
 
    ```bash
@@ -50,13 +50,13 @@ description: 将需求符合度和工程质量作为两个独立审查轴，使�
    node "${CODEAGENT3_PLUGIN_ROOT}/scripts/sdd.mjs" transition --id <id> --to PLANNED --root "${CLAUDE_PROJECT_DIR}"
    ```
 
-9. 只有每条验收条件通过、两项审查清晰、要求命令为最新结果且不存在未解决阻塞时，才能写入 `Verdict: PASS` 并流转：
+10. 只有每条验收条件通过、两项审查清晰、要求命令为最新结果且不存在未解决阻塞时，才能写入 `Verdict: PASS` 并流转：
 
    ```bash
    node "${CODEAGENT3_PLUGIN_ROOT}/scripts/sdd.mjs" transition --id <id> --to VERIFIED --root "${CLAUDE_PROJECT_DIR}"
    ```
 
-10. 变更已在 `VERIFIED` 状态但实现文件在验证后发生了合法修改（如评审反馈的修复、文档订正）时，直接重新执行完整验证流程并再次流转到 `VERIFIED`。工具会重算指纹，无需先回退到 `BUILT`。必须重新运行所有要求命令并更新证据，不得只刷新指纹而跳过审查。
+11. 变更已在 `VERIFIED` 状态但实现文件在验证后发生了合法修改（如评审反馈的修复、文档订正）时，直接重新执行完整验证流程并再次流转到 `VERIFIED`。工具会重算指纹，无需先回退到 `BUILT`。必须重新运行所有要求命令并更新证据，不得只刷新指纹而跳过审查。
 
 ## 完成条件
 

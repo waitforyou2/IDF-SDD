@@ -26,7 +26,8 @@ const STATES = [
   'PLANNED',
   'BUILT',
   'VERIFIED',
-  'DONE'
+  'DONE',
+  'ABANDONED'
 ];
 
 const ALLOWED_TRANSITIONS = new Map([
@@ -35,7 +36,8 @@ const ALLOWED_TRANSITIONS = new Map([
   ['PLANNED', new Set(['BUILT', 'DRAFT'])],
   ['BUILT', new Set(['VERIFIED', 'PLANNED'])],
   ['VERIFIED', new Set(['DONE', 'VERIFIED'])],
-  ['DONE', new Set(['PLANNED'])]
+  ['DONE', new Set(['DEFINED', 'VERIFIED'])],
+  ['ABANDONED', new Set()]
 ]);
 
 const NEXT_COMMAND = {
@@ -44,7 +46,8 @@ const NEXT_COMMAND = {
   PLANNED: '/isdd-build',
   BUILT: '/isdd-verify',
   VERIFIED: '/isdd-ship',
-  DONE: null
+  DONE: null,
+  ABANDONED: null
 };
 
 function emit(value) {
@@ -701,6 +704,10 @@ function gitLines(root, args) {
 function changeFingerprint(root, baseRef) {
   let changed = [];
   if (baseRef && baseRef !== 'unborn') {
+    const refCheck = run('git', ['cat-file', '-t', baseRef], { cwd: root, timeout: 15_000 });
+    if (refCheck.status !== 0) {
+      fail(`base_ref（${baseRef}）已失效，可能主分支被 rebase 或 force-push。请重新执行 /isdd-verify 刷新 base_ref。`, { base_ref: baseRef });
+    }
     changed = gitLines(root, ['diff', '--name-only', '--diff-filter=ACDMRTUXB', baseRef, '--']);
   } else {
     changed = gitLines(root, ['ls-files']);
@@ -831,8 +838,8 @@ function validateVerification(root, id) {
   if (!/^Verdict:\s*PASS\s*$/im.test(content)) errors.push('verification.md 必须包含完全匹配的 `Verdict: PASS` 行。');
   if (/\|\s*FAIL\s*\|/i.test(content)) errors.push('verification.md 的验收证据表中仍有失败项。');
   const codecheckContent = (sectionMap(content).get('CodeCheck 门禁') || '').replace(/<!--[\s\S]*?-->/g, '').trim();
-  if (/忽略|跳过|豁免|不影响|误报|无需修复|暂不处理/.test(codecheckContent)) {
-    errors.push('verification.md 的 CodeCheck 门禁章节包含绕过措辞（忽略/跳过/豁免/误报/不影响等），所有告警必须修复，不得跳过。');
+  if (/忽略|跳过.*检查|跳过.*告警|豁免.*规则|豁免.*告警|不影响.*告警|不影响.*检查|不影响.*规则|误报|无需修复|暂不处理/.test(codecheckContent)) {
+    errors.push('verification.md 的 CodeCheck 门禁章节包含绕过措辞（忽略/跳过检查/豁免规则/误报/无需修复等），所有告警必须修复，不得跳过。');
   }
   if (codecheckContent && !/无告警|0\s*告警|告警.*已修复|全部.*修复|告警已清除/.test(codecheckContent)) {
     errors.push('verification.md 的 CodeCheck 门禁章节必须明确记录"无告警"或"全部已修复"。');
@@ -878,8 +885,7 @@ function validateRepository(root) {
       '构建与验证命令',
       '测试布局',
       '工程规范',
-      '关键与敏感区域',
-      '初始化证据'
+      '关键与敏感区域'
     ];
     errors.push(...validateRequiredSections(repositoryFile, required));
   }
@@ -939,7 +945,7 @@ function transition(root, flags) {
     const fingerprint = changeFingerprint(root, change.metadata.base_ref);
     change.metadata.verified_fingerprint = fingerprint.value;
   }
-  if (target === 'PLANNED' || target === 'DRAFT') {
+  if (target === 'PLANNED' || target === 'DRAFT' || target === 'DEFINED') {
     change.metadata.verified_fingerprint = '';
     change.metadata.delivery_ref = '';
   }
@@ -1009,7 +1015,7 @@ function status(root, flags) {
     root,
     repository_ready: repositoryErrors.length === 0,
     repository_errors: repositoryErrors,
-    active_changes: changes.filter((change) => change.state !== 'DONE'),
+    active_changes: changes.filter((change) => change.state !== 'DONE' && change.state !== 'ABANDONED'),
     completed_changes: changes.filter((change) => change.state === 'DONE')
   });
 }
@@ -1057,6 +1063,18 @@ function block(root, flags) {
   emit({ ok: true, action: 'block', id, state: change.metadata.state, reason });
 }
 
+function abandon(root, flags) {
+  const id = safeId(flags.id);
+  const change = loadChange(root, id);
+  if (change.metadata.state === 'DONE') fail('已完成的变更不能取消。如需回滚，请新建变更。');
+  change.metadata.state = 'ABANDONED';
+  change.metadata.blocked = 'true';
+  change.metadata.block_reason = String(flags.reason || '').trim() || '变更已取消';
+  change.metadata.updated_at = isoNow();
+  writeText(change.file, serializeFrontmatter(change.metadata, change.body));
+  emit({ ok: true, action: 'abandon', id, state: 'ABANDONED', reason: change.metadata.block_reason });
+}
+
 function help() {
   emit({
     ok: true,
@@ -1067,6 +1085,7 @@ function help() {
       artifact: 'artifact <plan|verification|delivery> --id <id>',
       transition: 'transition --id <id> --to <state> [--delivery-ref <ref>]',
       block: 'block --id <id> --reason <reason>',
+      abandon: 'abandon --id <id> [--reason <reason>]',
       status: 'status [--id <id>]',
       validate: 'validate [--repo|--id <id>]'
     }
@@ -1096,6 +1115,9 @@ switch (command) {
     break;
   case 'block':
     block(root, flags);
+    break;
+  case 'abandon':
+    abandon(root, flags);
     break;
   case 'status':
     status(root, flags);

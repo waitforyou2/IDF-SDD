@@ -1,8 +1,8 @@
 # 归档契约
 
-`docs/isdd/` 必须与业务代码一起提交，`.codegraph/` 不得提交。
+`docs/isdd/changes/` 下的变更级归档必须与业务代码一起提交。仓库级辅助文档（`repository.md`、`repository.yaml`、`policy.md`）和 `.codegraph/` 不提交，每次 init 重新生成。
 
-## 仓库级归档
+## 仓库级辅助文档（本地，不提交）
 
 - `repository.yaml`：识别出的工程命令、图谱提供方和工作流设置，作为机器可读配置。
 - `repository.md`：经过人工确认的架构、领域语言、决策索引、边界、命令、规范和关键流程。

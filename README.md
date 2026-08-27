@@ -40,13 +40,7 @@ IDF-SDD 有意保留以下差异：
 
 - CodeAgent CLI，或支持 Extension、Skill、Hook、MCP 和智能体的公司内部兼容工具。严格模式要求支持并行只读审查智能体。
 - 使用 npm 发行的 CodeGraph CLI 时，需要 Node.js 20 至 24；IDF-SDD 自身脚本最低需要 Node.js 18。
-- [CodeGraph](https://github.com/colbymchenry/codegraph) 已安装并可通过 `codegraph` 命令调用。
-
-可通过 npm 安装经过验证的 CodeGraph 版本：
-
-```bash
-npm install -g @colbymchenry/codegraph@1.5.0
-```
+- CodeGraph、CodeCheck CLI 和 CodeHub CLI 无需预装。执行 `/isdd-init` 时脚本会自动安装。
 
 当前版本按 CodeGraph 1.5.0 的 MCP 与 CLI 契约开发，并会拒绝不兼容的旧版本。插件已经提供 `codegraph serve --mcp` 配置，无需额外执行 `codegraph install`。CodeGraph 是外部工具，不会被打包进 IDF-SDD。
 
@@ -78,14 +72,14 @@ npm install -g @colbymchenry/codegraph@1.5.0
 
 ## 仓库归档
 
-插件将以下文件与业务代码一起保存：
+插件将变更级归档与业务代码一起保存，仓库级辅助文档不提交（每次 init 重新生成）：
 
 ```text
-docs/isdd/
-|-- repository.yaml
-|-- repository.md
-|-- policy.md
-`-- changes/
+docs/isdd/                        （本地辅助，不提交）
+|-- repository.yaml               （init 自动生成）
+|-- repository.md                 （init 基于 CodeGraph 重新生成）
+|-- policy.md                     （init 从模板生成，团队可自定义）
+`-- changes/                      （随代码提交）
     `-- <change-id>/
         |-- spec.md
         |-- plan.md
@@ -93,9 +87,9 @@ docs/isdd/
         `-- delivery.md
 ```
 
-`repository.md` 保存架构、领域语言、ADR 索引、工程命令、测试 seam 和敏感区域。每项变更的归档保存需求、技术决策、实际偏差、验证证据和交付历史。
+`repository.md` 保存架构、领域语言、ADR 索引、工程命令、测试 seam 和敏感区域。每项变更的归档保存需求、技术决策、实际偏差、验证证据和交付历史。`repository.md`、`repository.yaml` 和 `policy.md` 被加入 `.gitignore`，每次 init 重新生成以确保反映仓库最新状态。
 
-自动生成的 `.codegraph/` 是本地可重建缓存，会被加入 `.gitignore`，不得提交到业务仓库。
+自动生成的 `.codegraph/` 同样是本地可重建缓存，不得提交到业务仓库。
 
 ## 流程模式
 
@@ -111,3 +105,61 @@ docs/isdd/
 npm test
 npm run validate
 ```
+
+## 常见问题排查
+
+### CodeGraph 安装失败
+
+- 检查 Node.js 版本 ≥ 18（CodeGraph CLI 需要 20-24，IDF-SDD 脚本最低 18）。
+- 检查网络能访问 npm 公共仓库或华为镜像源。
+- 手动安装：`npm install -g @colbymchenry/codegraph@1.5.0`。
+- 安装后仍不可用时重启终端。
+
+### CodeHub CLI 认证 401
+
+- 先清除可能存在的 token 环境变量：`unset CODEHUB_TOKEN`（它会覆盖 W3 认证导致 401）。
+- 检查认证状态：`codehub-cli auth status`。
+- 重新登录：在独立终端运行 `codehub-cli auth login --w3 --username <工号> --all`（需要交互式输入密码，CodeAgent 会话内无法执行）。
+
+### 指纹不匹配（实现文件在验证后发生了变化）
+
+- 这是指纹防篡改机制：验证后修改了代码但没有重新验证。
+- 修复：重新执行 `/isdd-verify` 刷新指纹，无需回退状态。
+
+### 状态流转被拒绝
+
+允许的状态流转路径：
+
+```text
+DRAFT → DEFINED → PLANNED → BUILT → VERIFIED → DONE
+```
+
+返工路径：
+
+- `BUILT → PLANNED`（验证失败）
+- `VERIFIED → VERIFIED`（重新验证刷新指纹）
+- `DONE → VERIFIED`（小问题修复，复用已有 MR）
+- `DONE → DEFINED`（全流程返工，新建 MR）
+- `PLANNED → DRAFT`（需求实质变化）
+- 任何非 DONE 状态 → `ABANDONED`（取消变更）
+
+### codecheck 命令找不到
+
+- CodeCheck CLI 由 init 脚本自动安装，使用 `@baize:registry` 私有仓库。
+- 手动安装：`npm config set @baize:registry https://cmc.centralrepo.rnd.huawei.com/artifactory/api/npm/product_npm/` && `npm install -g @baize/codecheckcli`。
+- 安装后验证：`codecheck --version`。
+
+### MR 创建失败说分支不存在
+
+- MR 是远端两个分支之间的差异对比，源分支必须已 push 到远端。
+- 确保先执行 `--push` 再执行 `--create-mr`，或使用 `--create-mr` 时确保分支已在远端。
+
+### ScheduleWakeup 监控停止了
+
+- 监控依赖会话内 `ScheduleWakeup`，关闭 CodeAgent 会话后监控自动停止。
+- 重新执行 `/isdd-ship <change-id> --create-mr` 可恢复监控，ship 会检测到已有 MR 并复用。
+
+### base_ref 失效
+
+- 主分支被 rebase 或 force-push 后，创建变更时记录的 commit SHA 可能已被回收。
+- 报错信息会提示重新执行 `/isdd-verify` 刷新 base_ref。
