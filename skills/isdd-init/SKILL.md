@@ -23,7 +23,18 @@ description: 初始化或修复业务 Git 仓库的 IDF-SDD 环境，建立本�
 
    脚本会依次执行：CodeGraph 安装和索引、CodeCheck CLI 安装（`@baize/codecheckcli`，使用 `@baize:registry` 私有仓库）、CodeHub CLI 安装（`@codehub/codehub-cli`，使用 `@codehub:registry` 私有仓库）。安装时临时配置私有仓库并禁用 SSL 校验，安装后恢复原配置。安装结果在脚本输出的 JSON 中包含 `codegraph_*`、`codecheck_*`、`codehub_*` 字段。
 4. 检查 CodeHub CLI 认证状态。先清除可能存在的 `CODEHUB_TOKEN` 环境变量（它会覆盖 W3 认证导致 401），再运行 `codehub-cli auth status`。已登录则跳过。未登录时，从 `whoami` 或 `git config user.name` 获取用户工号，提示用户在独立终端运行 `codehub-cli auth login --w3 --username <工号> --all`（W3 登录，一键登录所有地域），在终端中输入 W3 密码完成登录。告诉用户完成后回来确认，然后重新检查 `codehub-cli auth status`。不得在当前会话中直接传密码。
-5. 扫描当前用户在仓库中的未完成 MR。认证通过后，从 `codehub-cli auth status` 或 `codehub-cli user info` 输出中获取当前用户工号，然后运行 `codehub-cli mr list -p "<org/repo>" --state opened --author <工号> --format json` 检查是否有 open 状态的 MR。有未完成 MR 时告知用户每个 MR 的标题、URL 和状态摘要（门禁是否通过、是否有未处理检视意见），询问用户是否要先处理这些 MR 再开始新需求。用户选择跳过时继续 init 流程。
+5. 扫描当前仓库中用户的未完成 MR。认证通过后，从 `codehub-cli auth status` 或 `codehub-cli user info` 输出中获取当前用户工号。然后判断仓库模式：
+   - 运行 `git remote -v` 获取 remote URL，解析出仓库路径（如 `b00937887/CMCManagementOperationsService`）。
+   - 解析 remote URL 中是否包含当前用户工号。
+   - **非 fork 模式**（remote URL 不含用户工号）：直接用当前仓库路径查 MR：
+     ```bash
+     codehub-cli mr list -p "<当前仓库路径>" --state opened --author <工号> --format json
+     ```
+   - **fork 模式**（remote URL 含用户工号）：MR 建在主仓库上，不在 fork 仓库上。先用 `codehub-cli project view -p "<fork仓库路径>" --format json` 获取 `forked_from_project` 字段拿到主仓库路径，再用主仓库路径查 MR：
+     ```bash
+     codehub-cli mr list -p "<主仓库路径>" --state opened --author <工号> --format json
+     ```
+   有未完成 MR 时告知用户每个 MR 的标题、URL 和状态摘要（门禁是否通过、是否有未处理检视意见），询问用户是否要先处理这些 MR 再开始新需求。用户选择跳过时继续 init 流程。
 
 6. 使用一次聚焦的 `codegraph_explore` 仓库分析，覆盖仓库职责、入口、模块边界、主要调用流程、测试布局和高影响区域。构建文件、说明文档、配置、提交历史和 ADR 等图谱无法解释的内容，直接读取原文件。
 7. **重新生成** `docs/isdd/repository.md`，用模板结构基于最新 CodeGraph 索引和仓库证据填写全部内容。重复初始化时整体重写，不做增量更新，确保文档始终反映仓库最新状态。至少包括：
