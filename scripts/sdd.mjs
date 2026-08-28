@@ -34,8 +34,8 @@ const ALLOWED_TRANSITIONS = new Map([
   ['DRAFT', new Set(['DEFINED'])],
   ['DEFINED', new Set(['PLANNED'])],
   ['PLANNED', new Set(['BUILT', 'DRAFT'])],
-  ['BUILT', new Set(['VERIFIED', 'PLANNED'])],
-  ['VERIFIED', new Set(['DONE', 'VERIFIED'])],
+  ['BUILT', new Set(['VERIFIED', 'PLANNED', 'DRAFT'])],
+  ['VERIFIED', new Set(['DONE', 'VERIFIED', 'PLANNED', 'DRAFT'])],
   ['DONE', new Set(['DEFINED', 'VERIFIED'])],
   ['ABANDONED', new Set()]
 ]);

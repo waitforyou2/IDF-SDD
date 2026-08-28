@@ -25,6 +25,8 @@
 - 小问题修复后直接重新验证：`DONE → VERIFIED`（如 CodeCheck/代码风格问题，不改变设计方案）。
 - 评审要求改变方案时：`DONE → DEFINED`（全流程返工，重新定义需求、规划、实现和验证）。
 - 需求发生实质变化时：`PLANNED → DRAFT`。
+- 开发阶段发现需求问题时：`BUILT → DRAFT`。
+- 验证阶段发现需求问题时：`VERIFIED → PLANNED` 或 `VERIFIED → DRAFT`。
 - 变更不再需要时：任何非 DONE 状态 → `ABANDONED`（通过 `abandon` 命令，不可恢复）。
 
 确认、失败和阻塞属于门禁结果或元数据，不新增状态。没有 MR 交付引用时，绝不得标记为 `DONE`。

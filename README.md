@@ -137,7 +137,10 @@ DRAFT → DEFINED → PLANNED → BUILT → VERIFIED → DONE
 返工路径：
 
 - `BUILT → PLANNED`（验证失败）
+- `BUILT → DRAFT`（开发阶段发现需求问题）
 - `VERIFIED → VERIFIED`（重新验证刷新指纹）
+- `VERIFIED → PLANNED`（验证阶段发现需求问题）
+- `VERIFIED → DRAFT`（验证阶段发现需求根本不对）
 - `DONE → VERIFIED`（小问题修复，复用已有 MR）
 - `DONE → DEFINED`（全流程返工，新建 MR）
 - `PLANNED → DRAFT`（需求实质变化）
