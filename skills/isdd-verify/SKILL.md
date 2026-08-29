@@ -29,12 +29,17 @@ description: 将需求符合度和工程质量作为两个独立审查轴，使�
 
 4. 以 `base_ref` 固定审查起点，检查范围内全部已提交和工作区 diff。使用 `codegraph_explore` 分析变更符号、调用方、路由、边界跨越、受影响测试、兼容性和影响范围。CodeGraph 提示文件待同步或过期时，直接读取文件。
 5. 每条测试、构建、lint、类型、安全或确定性观察，都必须在用作证据前重新执行。记录准确命令、退出结果和关键信号。build 阶段的历史证据只能作为上下文，不能证明当前工作区。
-6. 执行 CodeCheck 门禁检查：
+6. 执行 CodeCheck 门禁检查（扫描-修复-复查循环）：
    - init 阶段已通过 npm 全局安装 `@baize/codecheckcli` 确保 codecheck CLI 可用。
    - **直接用 `codecheck fullcheck -f "<file1>,<file2>,..."` 指定变更文件路径执行全量检查**，不要先尝试基于 git diff 自动检测。从 plan.md 的实现步骤或 `git diff --name-only` 获取变更文件列表，用逗号拼接后通过 `-f` 传给 codecheck。例如：`codecheck fullcheck -f "models/kb.py,prompts/templates/analysis_system.md,tests/test_schema.py"`。
-   - **只执行一次检查**，不要重复尝试不同方式。
-   - **检查到的全部告警都必须修复**，不区分是本次新增还是存量代码遗留。修复后重新执行一次检查确认告警已清除。
-   - 记录扫描范围（文件列表）、告警数量、修复结果和最终状态到 verification.md 的 CodeCheck 门禁章节。0 告警时写"无告警"。
+   - 扫描出告警后，按以下循环修复：
+     1. 先运行 `codecheck fix` 让 CodeCheck 自动修复支持快速修复的告警（如注释格式、版权声明等）。
+     2. 重新运行 `codecheck fullcheck -f "<files>"` 检查剩余告警。
+     3. 对剩余告警逐条分析并用 Edit/Write 手动修复（CodeCheck fix 修不了的逻辑问题，如空指针、资源未关闭、空 catch 等）。
+     4. 再次运行 `codecheck fullcheck -f "<files>"` 确认无告警。
+     5. 如果修复引入了新告警，跳回第 3 步继续修复，直到无告警。
+   - **检查到的全部告警都必须修复**，不区分是本次新增还是存量代码遗留。
+   - 记录扫描范围（文件列表）、初始告警数量、fix 自动修复数量、AI 手动修复数量、修复结果和最终状态到 verification.md 的 CodeCheck 门禁章节。0 告警时写"无告警"。
    - **禁止以"不影响""误报""已忽略"等任何理由跳过告警**。verification.md 的 CodeCheck 门禁章节必须明确写"无告警"或"全部已修复"，否则流转到 VERIFIED 会被门禁拒绝。
    - 告警全部修复且复查无新增告警后才能通过验证。
 7. 分别执行两项审查，任何一项都不能替代另一项：
