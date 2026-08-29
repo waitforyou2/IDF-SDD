@@ -1,103 +1,174 @@
-# IDF-SDD
+# IDF-SDD 使用指南
 
-IDF-SDD 是智能数据底座开发组统一使用的 AI 软件设计与交付插件。它规范仓库初始化、需求定义、技术规划、编码实现、验证审查和交付归档，同时让简单变更保持轻量，让高风险变更获得更严格的设计、证据和独立审查。
+> 让每一次代码变更，都有设计、有证据、有传承。
 
-> 让智能数据底座的每一次变更，都有设计、有证据、有传承。
+IDF-SDD 是一个 AI 驱动的软件开发工作流插件。从需求定义到 MR 交付，全程有规范、有归档、有门禁。**任何需求——不管是加个字段还是重构架构——都走同一套流程，简单变更自动轻量，高风险变更自动加严。**
 
-每项变更都会在代码仓库中留下可持续维护的 `docs/isdd/` 记录，说明需求是什么、为什么选择当前设计、最终实现如何偏离原计划，以及通过什么证据确认完成。
+## 快速开始
 
-## 社区能力来源
+### 1. 安装插件
 
-IDF-SDD 不重复发明已经被社区验证的研发方法，而是有选择地吸收三个 MIT 许可项目的优秀实践。
+将 IDF-SDD 打包为 ZIP，通过 CodeAgent Extension 管理界面上传安装。
 
-| IDF-SDD 阶段 | 吸收的社区实践 |
-|---|---|
-| `init` | 吸收 Matt Pocock 关于领域语言和持久上下文的实践，并结合 IDF-SDD 自研的 CodeGraph 仓库分析与上下文归档。 |
-| `define` | 吸收 Addy Osmani 的规格驱动开发、Superpowers 的分级澄清与规格自检、Matt Pocock 的聚焦追问与领域建模方法。 |
-| `plan` | 吸收 Addy Osmani 的依赖式任务拆分、Superpowers 的精确路径与计划自检、Matt Pocock 的垂直切片、依赖边、深模块和测试 seam。 |
-| `build` | 吸收 Addy Osmani 的增量实现与 TDD、Superpowers 的 RED-GREEN-REFACTOR 和系统化调试、Matt Pocock 的公共 seam 行为测试。 |
-| `verify` | 吸收 Addy Osmani 的质量与风险审查、Superpowers 的最新证据与独立审查、Matt Pocock 的需求符合度和工程质量双轴评审。 |
-| `ship` | 吸收 Addy Osmani 的灰度、监控和回滚实践、Superpowers 的分支收尾方法，并结合 IDF-SDD 自研的动作级授权和交付指纹。 |
+### 2. 初始化仓库（每个仓库一次）
 
-主要上游来源：
-
-- [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills)
-- [obra/superpowers](https://github.com/obra/superpowers)
-- [mattpocock/skills](https://github.com/mattpocock/skills)
-
-这些项目是 IDF-SDD 的方法与实现来源，不是运行时依赖。团队成员只需安装 IDF-SDD。所有上游方法都被适配到统一的命令、状态机和归档契约中，因此上游升级不会静默改变团队流程。
-
-IDF-SDD 有意保留以下差异：
-
-- 包括 `lite` 在内的每项变更都保留精简的需求和计划，简单模式只降低深度，不取消追溯。
-- 计划必须包含精确路径、符号、测试 seam 和证据，但不预写容易过期的完整实现代码。
-- `build` 不自动提交；commit、push、创建 PR、merge 和 deploy 始终是独立授权动作。
-- CodeGraph 影响分析、内容指纹和随代码提交的 `docs/isdd/` 归档属于 IDF-SDD 的集成设计。
-
-版权和许可信息见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
-
-## 环境要求
-
-- CodeAgent CLI，或支持 Extension、Skill、Hook、MCP 和智能体的公司内部兼容工具。严格模式要求支持并行只读审查智能体。
-- 使用 npm 发行的 CodeGraph CLI 时，需要 Node.js 20 至 24；IDF-SDD 自身脚本最低需要 Node.js 18。
-- CodeGraph、CodeCheck CLI 和 CodeHub CLI 无需预装。执行 `/isdd-init` 时脚本会自动安装。
-
-当前版本按 CodeGraph 1.5.0 的 MCP 与 CLI 契约开发，并会拒绝不兼容的旧版本。插件已经提供 `codegraph serve --mcp` 配置，无需额外执行 `codegraph install`。CodeGraph 是外部工具，不会被打包进 IDF-SDD。
-
-## 本地安装
-
-将当前目录打包为 ZIP（根目录即为 extensionId `idf-sdd`），通过 CodeAgent Extension 管理界面上传安装。ZIP 包需符合 [Extension 规范](https://wiki.huawei.com/domains/59421/wiki/286914/WIKI2026031610425678)的上传校验规则。
-
-团队分发时，建议将 `idf-sdd` 迁移到独立的公司 Git 仓库，打包后上传到 CodeAgent Extension 市场。
-
-## 使用流程
-
-每个业务仓库首次接入时执行一次：
-
-```text
+```
 /isdd-init
 ```
 
-每项需求按以下阶段执行：
+自动完成：CodeGraph 索引、CodeCheck/CodeHub CLI 安装、W3 认证、仓库架构分析、评审人配置。扫描未完成 MR 并提醒。
 
-```text
-/isdd-define <需求描述>
-/isdd-plan <change-id>
-/isdd-build <change-id>
-/isdd-verify <change-id>
-/isdd-ship <change-id> --create-mr
+### 3. 开发需求（每次需求）
+
+```
+/isdd-define 添加用户头像字段
+/isdd-plan add-avatar-field
+/isdd-build add-avatar-field
+/isdd-verify add-avatar-field
+/isdd-ship add-avatar-field --create-mr
 ```
 
-任何时候都可以运行 `/isdd-status`，查看当前变更、阻塞原因、归档缺口和下一条准确命令。
+五条命令，从需求到 MR，全程 AI 执行，关键动作人工授权。
 
-## 仓库归档
+## 流程总览
 
-插件将变更级归档与业务代码一起保存，仓库级辅助文档不提交（每次 init 重新生成）：
-
-```text
-docs/isdd/                        （本地辅助，不提交）
-|-- repository.yaml               （init 自动生成）
-|-- repository.md                 （init 基于 CodeGraph 重新生成）
-|-- policy.md                     （init 从模板生成，团队可自定义）
-`-- changes/                      （随代码提交）
-    `-- <change-id>/
-        |-- spec.md
-        |-- plan.md
-        |-- verification.md
-        `-- delivery.md
+```
+/isdd-init（仓库初始化，每个仓库一次）
+    │
+    ▼
+/isdd-define  需求定义     → spec.md
+    │
+    ▼
+/isdd-plan    技术规划     → plan.md
+    │
+    ▼
+/isdd-build   编码实现     → 代码 + 测试
+    │
+    ▼
+/isdd-verify  验证审查     → verification.md
+    │
+    ▼
+/isdd-ship    交付 MR     → delivery.md + CodeHub MR
+    │
+    ▼
+  MR 合入，变更完成
 ```
 
-`repository.md` 保存架构、领域语言、ADR 索引、工程命令、测试 seam 和敏感区域。每项变更的归档保存需求、技术决策、实际偏差、验证证据和交付历史。`repository.md`、`repository.yaml` 和 `policy.md` 被加入 `.gitignore`，每次 init 重新生成以确保反映仓库最新状态。
+任何时候运行 `/isdd-status` 查看当前状态和下一条命令。
 
-自动生成的 `.codegraph/` 同样是本地可重建缓存，不得提交到业务仓库。
+## 各阶段说明
+
+### init — 初始化仓库
+
+每个仓库执行一次。自动安装工具链、建立 CodeGraph 索引、分析仓库架构。重复执行时刷新索引和仓库文档，不覆盖团队配置（评审人工号等）。
+
+### define — 需求定义
+
+输入需求描述，AI 澄清范围、识别风险、选择模式（lite/standard/strict），生成 `spec.md`。可填 E2E 单号，ship 阶段创建 MR 时必填。
+
+**需求变了？** 重新执行 `/isdd-define <id>` 即可，自动回退状态，保留原文参考。
+
+### plan — 技术规划
+
+AI 用 CodeGraph 分析调用链，拆成垂直切片任务，每个任务包含精确文件路径、符号、测试 seam 和验证命令。生成 `plan.md`。
+
+### build — 编码实现
+
+按 plan 中的任务顺序实现，测试优先（RED-GREEN-REFACTOR）。不自动提交，commit/push 需用户授权。
+
+### verify — 验证审查
+
+同时检查"做对了需求"和"做好了质量"。CodeCheck 扫描-修复循环（fix 自动修 + AI 手动修）。strict 模式下两个隔离 Agent 并行审查。
+
+**验证后改了代码？** 重新执行 `/isdd-verify` 刷新指纹，无需回退状态。
+
+### ship — 交付 MR
+
+填写 `delivery.md` → 用户授权 commit/push → 自动创建 CodeHub MR（fork/非 fork 自动判断）→ 后台监控 MR 状态、门禁和评审意见。
+
+**评审意见处理：** 发现检视意见时停止监控，AI 逐条分析（5 种分类：需要修改/已修复/不合理/风格偏好/无需修改），修复后过编译/UT/CodeCheck 三道门禁再 push 回 MR。
 
 ## 流程模式
 
-- `lite`：局部、可回滚、影响范围小，且不涉及契约、数据、安全、依赖或基础设施。归档保持精简，可自动执行到验证阶段。
-- `standard`：普通功能、缺陷和重构。需求与计划需要确认，验证阶段分别执行需求符合度和工程质量检查。
-- `strict`：认证、授权、支付、个人数据、迁移、公共契约、基础设施或架构级变更。两个隔离的只读审查智能体会并行检查需求符合度和工程质量。
+| 模式 | 适用场景 | 特点 |
+|---|---|---|
+| lite | 文案修改、小配置、简单字段 | 精简归档，可自动执行到验证 |
+| standard | 普通功能、缺陷、重构 | 需求确认 + 双轴审查 |
+| strict | 认证、支付、迁移、架构 | 两个隔离 Agent 并行审查 |
 
-三种模式使用完全相同的阶段。模式只调整文档深度、审查独立性和门禁强度，不改变生命周期。
+三种模式走完全相同的阶段，只调整深度和门禁强度。AI 根据需求描述自动分类，用户可覆盖。
+
+## 归档结构
+
+**随代码提交的（团队共享）：**
+
+```
+docs/isdd/changes/<change-id>/
+├── spec.md            需求定义
+├── plan.md            技术计划
+├── verification.md    验证报告
+└── delivery.md        交付记录
+```
+
+**本地辅助文档（不提交，每次 init 重新生成）：**
+
+```
+docs/isdd/
+├── repository.yaml    仓库配置（工程命令、CodeGraph、评审人）
+├── repository.md      仓库架构（领域语言、ADR、测试 seam）
+└── policy.md          团队策略
+```
+
+## 状态流转
+
+```
+DRAFT → DEFINED → PLANNED → BUILT → VERIFIED → DONE
+```
+
+返工不需要记命令，重新执行对应阶段的命令即可：
+
+| 场景 | 操作 |
+|---|---|
+| 需求要改 | `/isdd-define <id>` |
+| 验证失败 | `/isdd-verify <id>` 修复后重新验证 |
+| 评审小问题 | ship 监控自动处理，`DONE → VERIFIED` |
+| 评审要改方案 | ship 监控自动处理，`DONE → DEFINED` |
+| 变更不要了 | `/isdd-abandon <id>` |
+
+## 环境要求
+
+- CodeAgent CLI 或兼容工具
+- Node.js 18+（CodeGraph CLI 需要 20-24）
+- CodeGraph、CodeCheck、CodeHub CLI 无需预装，init 自动安装
+- W3 认证（CodeHub CLI 登录需要，在独立终端执行）
+
+## 常见问题
+
+### CodeHub CLI 认证 401
+
+清除 token 环境变量后重新登录：
+
+```bash
+unset CODEHUB_TOKEN
+codehub-cli auth status                          # 检查状态
+codehub-cli auth login --w3 --username <工号> --all  # 在独立终端执行
+```
+
+### 指纹不匹配
+
+验证后改了代码但没重新验证。执行 `/isdd-verify <id>` 刷新指纹即可，无需回退状态。
+
+### MR 创建失败说分支不存在
+
+MR 是远端两个分支的对比，源分支必须已 push。先 `--push` 再 `--create-mr`。
+
+### 监控停止了
+
+关闭 CodeAgent 会话后监控自动停止。重新执行 `/isdd-ship <id> --create-mr` 恢复，会自动复用已有 MR。
+
+### base_ref 失效
+
+主分支被 rebase 后，创建变更时记录的 commit 已失效。执行 `/isdd-verify <id>` 刷新。
 
 ## 验证插件包
 
@@ -106,63 +177,16 @@ npm test
 npm run validate
 ```
 
-## 常见问题排查
+## 社区能力来源
 
-### CodeGraph 安装失败
+IDF-SDD 不重复发明已经被社区验证的研发方法，而是有选择地吸收三个 MIT 许可项目的优秀实践。
 
-- 检查 Node.js 版本 ≥ 18（CodeGraph CLI 需要 20-24，IDF-SDD 脚本最低 18）。
-- 检查网络能访问 npm 公共仓库或华为镜像源。
-- 手动安装：`npm install -g @colbymchenry/codegraph@1.5.0`。
-- 安装后仍不可用时重启终端。
+主要上游来源（这些项目是方法与实现来源，不是运行时依赖）：
 
-### CodeHub CLI 认证 401
+- [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills)
+- [obra/superpowers](https://github.com/obra/superpowers)
+- [mattpocock/skills](https://github.com/mattpocock/skills)
 
-- 先清除可能存在的 token 环境变量：`unset CODEHUB_TOKEN`（它会覆盖 W3 认证导致 401）。
-- 检查认证状态：`codehub-cli auth status`。
-- 重新登录：在独立终端运行 `codehub-cli auth login --w3 --username <工号> --all`（需要交互式输入密码，CodeAgent 会话内无法执行）。
+IDF-SDD 有意保留以下差异：包括 lite 在内的每项变更都保留精简的需求和计划；计划包含精确路径和测试 seam 但不预写完整实现代码；commit/push/merge 始终是独立授权动作；CodeGraph 影响分析和内容指纹属于集成设计。
 
-### 指纹不匹配（实现文件在验证后发生了变化）
-
-- 这是指纹防篡改机制：验证后修改了代码但没有重新验证。
-- 修复：重新执行 `/isdd-verify` 刷新指纹，无需回退状态。
-
-### 状态流转被拒绝
-
-允许的状态流转路径：
-
-```text
-DRAFT → DEFINED → PLANNED → BUILT → VERIFIED → DONE
-```
-
-返工路径：
-
-- `BUILT → PLANNED`（验证失败）
-- `BUILT → DRAFT`（开发阶段发现需求问题）
-- `VERIFIED → VERIFIED`（重新验证刷新指纹）
-- `VERIFIED → PLANNED`（验证阶段发现需求问题）
-- `VERIFIED → DRAFT`（验证阶段发现需求根本不对）
-- `DONE → VERIFIED`（小问题修复，复用已有 MR）
-- `DONE → DEFINED`（全流程返工，新建 MR）
-- `PLANNED → DRAFT`（需求实质变化）
-- 任何非 DONE 状态 → `ABANDONED`（取消变更）
-
-### codecheck 命令找不到
-
-- CodeCheck CLI 由 init 脚本自动安装，使用 `@baize:registry` 私有仓库。
-- 手动安装：`npm config set @baize:registry https://cmc.centralrepo.rnd.huawei.com/artifactory/api/npm/product_npm/` && `npm install -g @baize/codecheckcli`。
-- 安装后验证：`codecheck --version`。
-
-### MR 创建失败说分支不存在
-
-- MR 是远端两个分支之间的差异对比，源分支必须已 push 到远端。
-- 确保先执行 `--push` 再执行 `--create-mr`，或使用 `--create-mr` 时确保分支已在远端。
-
-### ScheduleWakeup 监控停止了
-
-- 监控依赖会话内 `ScheduleWakeup`，关闭 CodeAgent 会话后监控自动停止。
-- 重新执行 `/isdd-ship <change-id> --create-mr` 可恢复监控，ship 会检测到已有 MR 并复用。
-
-### base_ref 失效
-
-- 主分支被 rebase 或 force-push 后，创建变更时记录的 commit SHA 可能已被回收。
-- 报错信息会提示重新执行 `/isdd-verify` 刷新 base_ref。
+版权和许可信息见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
