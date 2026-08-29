@@ -138,7 +138,38 @@ description: 完成 VERIFIED 状态的 IDF-SDD 分支，准备并在获得独立
     - 状态为 `closed` → MR 被关闭，通知用户处理，结束监控。
     - 状态为 `opened` → 继续第二步。
 
-    **第二步：检查门禁状态**
+    **第二步：检查评审意见（每轮必查，最高优先级）**
+
+    ```bash
+    codehub-cli mr review list -p "<org/repo>" <mr-iid> --format json
+    ```
+
+    用 `--format json` 获取结构化数据。返回一个数组，每个元素是一条评审讨论。从数组中筛选 `resolved` 为 `false` 的条目。每条意见的字段结构：
+    - `id`：评审讨论 ID（顶层字段，用于回复 `mr review reply`）
+    - `resolved`：是否已处理（顶层字段，`false` 表示未处理）
+    - `notes`：回复和意见内容数组，取 `notes[0]` 获取首条意见：
+      - `notes[0].body`：意见正文
+      - `notes[0].file_path`：文件路径（可能为 `null`，表示是 MR 级别意见而非行级意见）
+      - `notes[0].line`：行号（可能为 `null`）
+      - `notes[0].author.username`：意见作者
+    - 严重级别通常嵌在 `notes[0].body` 文本中，需从正文解析
+
+    - 无未处理的评审意见（`resolved=false` 为空）→ 安排下一轮 ScheduleWakeup（如未达 30 分钟上限）。
+    - 有未处理的评审意见 → **停止后台监控**，展示每条意见的文件、行号、严重级别和内容，判断返工规模：
+      - **小问题修复**（代码风格、CodeCheck 告警、简单逻辑错误等，不改变设计方案）：
+        - 流转到 `VERIFIED`：`transition --id <id> --to VERIFIED`（`delivery_ref` 保留，MR 仍然有效）。
+        - 逐条修复本地代码。
+        - 用 `codehub-cli mr review reply -p "<org/repo>" <mr-iid> <review-id> --body "<回复内容>"` 回复每条意见。`<review-id>` 取评审讨论的 `id` 字段（长 hash 字符串）。
+        - 重新运行 `/isdd-verify` 刷新指纹。
+        - 重新执行 ship 流程：ship 会检测到 `delivery_ref` 有值且 MR 为 `opened` → 复用已有 MR（push 代码 + `mr update` 更新描述），不重复创建。
+        - 通知用户修复已完成，询问是否继续后台监控 → 继续则重新启动 9a 监控循环。
+      - **全流程返工**（评审意见提出不同实现方式，需要重新设计需求）：
+        - 流转到 `DEFINED`：`transition --id <id> --to DEFINED`（`delivery_ref` 被清空，旧 MR 失效）。
+        - 告知用户需要重新走 define → plan → build → verify → ship 完整流程。
+        - 用户完成重新开发后，ship 会检测到 `delivery_ref` 为空 → 新建 MR。
+      - **用户拒绝修复** → 保持 `DONE` 状态，告知用户需在 CodeHub 上手动处理，结束监控。
+
+    **第三步：检查门禁状态**
 
     ```bash
     codehub-cli mr gate -p "<org/repo>" <mr-iid>
@@ -149,7 +180,7 @@ description: 完成 VERIFIED 状态的 IDF-SDD 分支，准备并在获得独立
     - `all_issues_passed`：所有关联的 issue 检查是否通过。
     - `e2e_check_passed`：E2E 检查是否通过。
 
-    - 门禁全部通过 → 继续第三步。
+    - 门禁全部通过 → 告知用户门禁已通过，安排下一轮 ScheduleWakeup（如未达 30 分钟上限）。
     - **e2e 单号关联失败**（`all_issues_passed=false` 或 `e2e_check_passed=false`）→ 单号可能有误。用 `codehub-cli mr view -p "<org/repo>" <mr-iid>` 查看 `related_issues` 字段确认当前关联的单号。告知用户 e2e 单号门禁未通过，要求用户提供正确的单号。用户提供后：
       1. 更新 `spec.md` 的 `e2e_issue` 字段为新单号。
       2. 更新 `delivery.md` 的需求单号章节。
@@ -160,34 +191,6 @@ description: 完成 VERIFIED 状态的 IDF-SDD 分支，准备并在获得独立
     - **其他门禁失败**（流水线/CodeCheck 等）→ 通知用户门禁失败，提供流水线链接（从 `codehub-cli mr pipeline -p "<org/repo>" <mr-iid>` 获取 URL），让用户自行查看日志。不尝试自动修复门禁问题。询问用户是否继续监控：
       - 继续 → ScheduleWakeup 安排下一轮。
       - 停止 → 保持 `DONE` 状态，结束监控。
-
-    **第三步：检查评审意见**
-
-    ```bash
-    codehub-cli mr review list -p "<org/repo>" <mr-iid> --format json
-    ```
-
-    用 `--format json` 获取结构化数据。从返回结果中筛选 `resolved` 为 `false` 的评审意见。每条意见提取以下字段：
-    - `id`：评审意见 ID（用于回复）
-    - `file_path`：文件路径
-    - `line`：行号
-    - `severity`：严重级别（suggestion/minor/major）
-    - `body`：意见内容
-
-    - 无未处理的评审意见（`resolved=false` 为空）→ 安排下一轮 ScheduleWakeup（如未达 30 分钟上限）。
-    - 有未处理的评审意见 → **停止后台监控**，展示每条意见的文件、行号、严重级别和内容，判断返工规模：
-      - **小问题修复**（代码风格、CodeCheck 告警、简单逻辑错误等，不改变设计方案）：
-        - 流转到 `VERIFIED`：`transition --id <id> --to VERIFIED`（`delivery_ref` 保留，MR 仍然有效）。
-        - 逐条修复本地代码。
-        - 用 `codehub-cli mr review reply -p "<org/repo>" <mr-iid> <review-id> --body "<回复内容>"` 回复每条意见。
-        - 重新运行 `/isdd-verify` 刷新指纹。
-        - 重新执行 ship 流程：ship 会检测到 `delivery_ref` 有值且 MR 为 `opened` → 复用已有 MR（push 代码 + `mr update` 更新描述），不重复创建。
-        - 通知用户修复已完成，询问是否继续后台监控 → 继续则重新启动 9a 监控循环。
-      - **全流程返工**（评审意见提出不同实现方式，需要重新设计需求）：
-        - 流转到 `DEFINED`：`transition --id <id> --to DEFINED`（`delivery_ref` 被清空，旧 MR 失效）。
-        - 告知用户需要重新走 define → plan → build → verify → ship 完整流程。
-        - 用户完成重新开发后，ship 会检测到 `delivery_ref` 为空 → 新建 MR。
-      - **用户拒绝修复** → 保持 `DONE` 状态，告知用户需在 CodeHub 上手动处理，结束监控。
 
     ### 9c. 监控结束条件
 
