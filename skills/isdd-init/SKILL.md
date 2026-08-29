@@ -43,7 +43,7 @@ description: 初始化或修复业务 Git 仓库的 IDF-SDD 环境，建立本�
    - 已存在的 ADR 或其他持久决策记录；
    - 测试位置和成本最低的有效反馈命令；
    - 敏感区域、生成代码、兼容边界和代码归属。
-8. 确认或修正 `docs/isdd/repository.yaml`，记录 CodeGraph 状态和至少一条实际可运行的低成本验证命令。不得根据图结构臆测业务语义或架构决策原因。
+8. 确认或修正 `docs/isdd/repository.yaml`，记录 CodeGraph 状态和至少一条实际可运行的低成本验证命令。不得根据图结构臆测业务语义或架构决策原因。检查 `reviewer` 字段（默认评审人工号）：如果已有值则保留，如果为空则询问用户提供评审人工号并填入。此工号在 ship 阶段创建 MR 时通过 `--reviewers` 传入 CodeHub，填一次后后续 init 会自动保留。
 9. `docs/isdd/repository.md`、`docs/isdd/repository.yaml` 和 `docs/isdd/policy.md` 是本地辅助文件，不提交到代码仓库（已被 `.gitignore` 忽略）。每次 init 时重新生成，确保始终反映仓库最新状态。`docs/isdd/changes/` 下的需求归档文件（spec.md、plan.md、verification.md、delivery.md）仍然随代码提交。
 10. 执行：
 

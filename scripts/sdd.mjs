@@ -509,11 +509,12 @@ function detectCommands(root) {
   return { commands, technologies };
 }
 
-function renderRepositoryYaml(root, detection, codegraphEnabled) {
+function renderRepositoryYaml(root, detection, codegraphEnabled, existingReviewer) {
   const commandLines = Object.entries(detection.commands)
     .map(([key, value]) => `  ${key}: ${yamlScalar(value)}`)
     .join('\n');
-  return `workflow_version: ${yamlScalar(WORKFLOW_VERSION)}\ninitialized_at: ${yamlScalar(isoNow())}\nrepository_root: "."\ntechnologies:\n${detection.technologies.length ? detection.technologies.map((item) => `  - ${yamlScalar(item)}`).join('\n') : '  - "unknown"'}\ncommands:\n${commandLines}\ncodegraph:\n  provider: "colbymchenry/codegraph"\n  minimum_version: ${yamlScalar(CODEGRAPH_MIN_VERSION)}\n  enabled: ${codegraphEnabled ? 'true' : 'false'}\n  index_directory: ".codegraph"\n  auto_sync: true\npolicy:\n  file: "docs/isdd/policy.md"\n  default_mode: "standard"\n  require_human_delivery: true\nartifacts:\n  directory: "docs/isdd/changes"\n  commit_with_code: true\n`;
+  const reviewerLine = existingReviewer ? `reviewer: ${yamlScalar(existingReviewer)}\n` : '';
+  return `workflow_version: ${yamlScalar(WORKFLOW_VERSION)}\ninitialized_at: ${yamlScalar(isoNow())}\nrepository_root: "."\ntechnologies:\n${detection.technologies.length ? detection.technologies.map((item) => `  - ${yamlScalar(item)}`).join('\n') : '  - "unknown"'}\ncommands:\n${commandLines}\ncodegraph:\n  provider: "colbymchenry/codegraph"\n  minimum_version: ${yamlScalar(CODEGRAPH_MIN_VERSION)}\n  enabled: ${codegraphEnabled ? 'true' : 'false'}\n  index_directory: ".codegraph"\n  auto_sync: true\npolicy:\n  file: "docs/isdd/policy.md"\n  default_mode: "standard"\n  require_human_delivery: true\nartifacts:\n  directory: "docs/isdd/changes"\n  commit_with_code: true\n${reviewerLine}`;
 }
 
 function ensureGitignore(root) {
@@ -558,7 +559,12 @@ function initRepository(root, flags) {
   const policyFile = path.join(directory, 'policy.md');
   ensureDirectory(path.join(directory, 'changes'));
   const detection = detectCommands(root);
-  if (!fs.existsSync(configFile) || flags.force) writeText(configFile, renderRepositoryYaml(root, detection, codegraphEnabled));
+  let existingReviewer = '';
+  if (fs.existsSync(configFile)) {
+    const { metadata } = parseFrontmatter(readText(configFile));
+    existingReviewer = String(metadata.reviewer || '').trim();
+  }
+  if (!fs.existsSync(configFile) || flags.force) writeText(configFile, renderRepositoryYaml(root, detection, codegraphEnabled, existingReviewer));
   if (!fs.existsSync(repositoryFile)) copyTemplate('repository.md', repositoryFile);
   if (!fs.existsSync(policyFile)) copyTemplate('policy.md', policyFile);
   const gitignoreChanged = ensureGitignore(root);

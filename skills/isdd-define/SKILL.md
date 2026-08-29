@@ -36,7 +36,7 @@ description: 定义或修订一项 IDF-SDD 变更，将问题、范围、非目�
    - `--id`：英文短横线连接的小写标识符，从需求关键词提取（如 `add-avatar-field`、`fix-login-timeout`）。只允许字母、数字、点、下划线和连字符，1-128 个字符，不得包含 `..`。
    - `--title`：中文或英文的自然语言标题。
    - `--mode`：lite、standard 或 strict。
-   - `--e2e`：E2E 需求单号（如 `US20260514051844`、`DTS2026071083813`）。创建 MR 时作为 `--e2e-issues` 传入 CodeHub。如果没有单号，可省略，但 ship 阶段创建 MR 时会要求提供。
+   - `--e2e`：E2E 需求单号（如 `US20260514051844`、`DTS2026071083813`）。创建 MR 时作为 `--e2e-issues` 传入 CodeHub。**此字段可选，但现在填写可避免 ship 阶段再询问。** 如果当前没有单号可省略，但 ship 阶段创建 MR 时必须提供，届时会再次询问。
 
    ```bash
    node "${CODEAGENT3_PLUGIN_ROOT}/scripts/sdd.mjs" change create --id <英文短横线标识符> --title "<标题>" --mode <模式> --e2e <E2E单号> --root "${CLAUDE_PROJECT_DIR}"
