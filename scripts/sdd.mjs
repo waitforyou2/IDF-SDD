@@ -119,6 +119,28 @@ function yamlScalar(value) {
   return JSON.stringify(String(value));
 }
 
+function parseYamlScalar(raw) {
+  let value = raw.trim();
+  if (value.startsWith('"') && value.endsWith('"')) {
+    try {
+      value = JSON.parse(value);
+    } catch {
+      value = value.slice(1, -1);
+    }
+  }
+  return String(value);
+}
+
+function parseYamlConfig(content) {
+  const metadata = {};
+  for (const line of content.split(/\r?\n/)) {
+    const item = line.match(/^([A-Za-z0-9_]+):\s*(.*)$/);
+    if (!item) continue;
+    metadata[item[1]] = parseYamlScalar(item[2]);
+  }
+  return metadata;
+}
+
 function parseFrontmatter(content) {
   const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
   if (!match) fail('spec.md 缺少 YAML frontmatter。');
@@ -126,15 +148,7 @@ function parseFrontmatter(content) {
   for (const line of match[1].split(/\r?\n/)) {
     const item = line.match(/^([A-Za-z0-9_]+):\s*(.*)$/);
     if (!item) continue;
-    let value = item[2].trim();
-    if (value.startsWith('"') && value.endsWith('"')) {
-      try {
-        value = JSON.parse(value);
-      } catch {
-        value = value.slice(1, -1);
-      }
-    }
-    metadata[item[1]] = String(value);
+    metadata[item[1]] = parseYamlScalar(item[2]);
   }
   return { metadata, body: content.slice(match[0].length) };
 }
@@ -561,7 +575,7 @@ function initRepository(root, flags) {
   const detection = detectCommands(root);
   let existingReviewer = '';
   if (fs.existsSync(configFile)) {
-    const { metadata } = parseFrontmatter(readText(configFile));
+    const metadata = parseYamlConfig(readText(configFile));
     existingReviewer = String(metadata.reviewer || '').trim();
   }
   if (!fs.existsSync(configFile) || flags.force) writeText(configFile, renderRepositoryYaml(root, detection, codegraphEnabled, existingReviewer));
