@@ -1,6 +1,6 @@
 ---
 name: isdd-verify
-description: 将需求符合度和工程质量作为两个独立审查轴，使用固定 diff、最新执行证据、CodeGraph 影响分析和 strict 模式独立 Agent，验证 BUILT 状态的 IDF-SDD 变更。用户执行 /isdd-verify、要求交付前审查，或失败和评审修复后需要重新验证时使用。
+description: 将需求符合度和工程质量作为两个独立审查轴，使用固定 diff、最新执行证据、CodeGraph 影响分析和 strict 模式独立 Agent，验证 BUILT 状态的 xingyun-sdd 变更。用户执行 /isdd-verify、要求交付前审查，或失败和评审修复后需要重新验证时使用。
 ---
 
 # 验证审查

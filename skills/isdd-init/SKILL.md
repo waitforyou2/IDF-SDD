@@ -1,9 +1,9 @@
 ---
 name: isdd-init
-description: 初始化或修复业务 Git 仓库的 IDF-SDD 环境，建立本地 CodeGraph 索引，识别工程命令，并创建随代码提交的架构、领域语言、决策和团队策略上下文。用户执行 /isdd-init、首次接入 IDF-SDD，或需要修复缺失或过期的仓库元数据时使用。
+description: 初始化或修复业务 Git 仓库的 xingyun-sdd 环境，建立本地 CodeGraph 索引，识别工程命令，并创建随代码提交的架构、领域语言、决策和团队策略上下文。用户执行 /isdd-init、首次接入 xingyun-sdd，或需要修复缺失或过期的仓库元数据时使用。
 ---
 
-# 初始化 IDF-SDD
+# 初始化 xingyun-sdd
 
 ## 目标
 

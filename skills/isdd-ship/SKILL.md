@@ -1,6 +1,6 @@
 ---
 name: isdd-ship
-description: 完成 VERIFIED 状态的 IDF-SDD 分支，准备并在获得独立授权后创建 CodeHub MR，将文档状态同步推送到 MR 分支，持续监控 MR 门禁和评审意见并支持返工修复，归档证据、风险、按需发布与回滚记录。用户执行 /isdd-ship、要求准备或创建 PR、或要把变更交付评审时使用。
+description: 完成 VERIFIED 状态的 xingyun-sdd 分支，准备并在获得独立授权后创建 CodeHub MR，将文档状态同步推送到 MR 分支，持续监控 MR 门禁和评审意见并支持返工修复，归档证据、风险、按需发布与回滚记录。用户执行 /isdd-ship、要求准备或创建 PR、或要把变更交付评审时使用。
 ---
 
 # 准备交付
@@ -66,11 +66,11 @@ description: 完成 VERIFIED 状态的 IDF-SDD 分支，准备并在获得独立
    - **源分支**：当前分支 `git branch --show-current`；用户明确指定时从其值。
    - **目标分支**：默认 `master`；用户明确指定时从其值。
    - **仓库**：从当前 Git remote 解析 `org/repo` 传入 `-p`。
-   - **标题**：固定格式 `【IDF-SDD】【<修改类型>】<简要描述>`。修改类型遵循 Conventional Commits 规范：`feat`（新功能）、`fix`（缺陷修复）、`refactor`（重构）、`docs`（文档）、`chore`（构建/工具）、`test`（测试）、`perf`（性能）、`style`（格式）、`ci`（CI 配置）。从 delivery.md 的【MR类型】字段取修改类型，从【简要描述】取描述内容。
+   - **标题**：固定格式 `【xingyun-sdd】【<修改类型>】<简要描述>`。修改类型遵循 Conventional Commits 规范：`feat`（新功能）、`fix`（缺陷修复）、`refactor`（重构）、`docs`（文档）、`chore`（构建/工具）、`test`（测试）、`perf`（性能）、`style`（格式）、`ci`（CI 配置）。从 delivery.md 的【MR类型】字段取修改类型，从【简要描述】取描述内容。
    - **描述**：直接用 `delivery.md` 作为 MR 描述文件，通过 `--no-auto-template -F delivery.md` 传入。不创建临时描述文件，不修改 delivery.md 内容。
    - **指派人/评审人**：从 `docs/isdd/repository.yaml` 的 `reviewer` 字段读取评审人工号，传入 `--reviewers`。字段为空时询问用户提供。同时使用 `--recommend-assignee` 让 CodeHub 自动填充指派人。
    - **E2E 单号**：从 `spec.md` 的 frontmatter `e2e_issue` 字段获取，传入 `--e2e-issues`。**字段为空时必须询问用户提供，用户必须提供单号才能创建 MR。** 用户提供后更新 `spec.md` 的 `e2e_issue` 字段和 `delivery.md` 的需求单号章节，再创建 MR。
-   - **Squash**：默认不开 `--squash`；用户明确要求时再加 `--squash --squash-commit-message "【IDF-SDD】【<修改类型>】<简要描述>"`。
+   - **Squash**：默认不开 `--squash`；用户明确要求时再加 `--squash --squash-commit-message "【xingyun-sdd】【<修改类型>】<简要描述>"`。
 
    非 fork 模式基础命令：
 
@@ -78,7 +78,7 @@ description: 完成 VERIFIED 状态的 IDF-SDD 分支，准备并在获得独立
    codehub-cli mr create -p "<org/repo>" \
      --source-branch "<当前分支>" \
      --target-branch "<目标分支>" \
-     --title "【IDF-SDD】【<修改类型>】<简要描述>" \
+     --title "【xingyun-sdd】【<修改类型>】<简要描述>" \
      --no-auto-template -F delivery.md \
      --recommend-assignee \
      --reviewers "<评审人工号>" \
@@ -93,7 +93,7 @@ description: 完成 VERIFIED 状态的 IDF-SDD 分支，准备并在获得独立
      --source-branch "<当前分支>" \
      --target-branch "<目标分支>" \
      --target-project-id "<主仓库项目ID>" \
-     --title "【IDF-SDD】【<修改类型>】<简要描述>" \
+     --title "【xingyun-sdd】【<修改类型>】<简要描述>" \
      --no-auto-template -F delivery.md \
      --recommend-assignee \
      --reviewers "<评审人工号>" \

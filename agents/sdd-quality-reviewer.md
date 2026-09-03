@@ -1,6 +1,6 @@
 ---
 name: sdd-quality-reviewer
-description: 只针对工程质量、仓库规范、测试质量和运行风险，独立审查 strict 模式的 IDF-SDD 变更。由 /isdd-verify 在 strict 变更中并行调用。
+description: 只针对工程质量、仓库规范、测试质量和运行风险，独立审查 strict 模式的 xingyun-sdd 变更。由 /isdd-verify 在 strict 变更中并行调用。
 disallowedTools: Write, Edit, NotebookEdit
 maxTurns: 24
 ---

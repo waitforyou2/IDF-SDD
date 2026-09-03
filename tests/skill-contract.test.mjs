@@ -113,13 +113,13 @@ test('ship 保持外部动作授权独立并确保生产交付可回滚', () => 
 test('README 说明社区复用、适配边界和许可', () => {
   const readme = read('README.md');
   includesAll(readme, [
-    '# IDF-SDD',
+    '# xingyun-sdd',
     '## 社区能力来源',
     'addyosmani/agent-skills',
     'obra/superpowers',
     'mattpocock/skills',
     '不是运行时依赖',
-    'IDF-SDD 有意保留',
+    'xingyun-sdd 有意保留',
     'THIRD_PARTY_NOTICES.md'
   ], 'README');
 

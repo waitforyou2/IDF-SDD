@@ -1,14 +1,14 @@
-# IDF-SDD 使用指南
+# xingyun-sdd 使用指南
 
 > 让每一次代码变更，都有设计、有证据、有传承。
 
-IDF-SDD 是一个 AI 驱动的软件开发工作流插件。从需求定义到 MR 交付，全程有规范、有归档、有门禁。**任何需求——不管是加个字段还是重构架构——都走同一套流程，简单变更自动轻量，高风险变更自动加严。**
+xingyun-sdd 是一个 AI 驱动的软件开发工作流插件。从需求定义到 MR 交付，全程有规范、有归档、有门禁。**任何需求——不管是加个字段还是重构架构——都走同一套流程，简单变更自动轻量，高风险变更自动加严。**
 
 ## 快速开始
 
 ### 1. 安装插件
 
-将 IDF-SDD 打包为 ZIP，通过 CodeAgent Extension 管理界面上传安装。
+将 xingyun-sdd 打包为 ZIP，通过 CodeAgent Extension 管理界面上传安装。
 
 ### 2. 初始化仓库（每个仓库一次）
 
@@ -179,7 +179,7 @@ npm run validate
 
 ## 社区能力来源
 
-IDF-SDD 不重复发明已经被社区验证的研发方法，而是有选择地吸收三个 MIT 许可项目的优秀实践。
+xingyun-sdd 不重复发明已经被社区验证的研发方法，而是有选择地吸收三个 MIT 许可项目的优秀实践。
 
 主要上游来源（这些项目是方法与实现来源，不是运行时依赖）：
 
@@ -187,6 +187,6 @@ IDF-SDD 不重复发明已经被社区验证的研发方法，而是有选择地
 - [obra/superpowers](https://github.com/obra/superpowers)
 - [mattpocock/skills](https://github.com/mattpocock/skills)
 
-IDF-SDD 有意保留以下差异：包括 lite 在内的每项变更都保留精简的需求和计划；计划包含精确路径和测试 seam 但不预写完整实现代码；commit/push/merge 始终是独立授权动作；CodeGraph 影响分析和内容指纹属于集成设计。
+xingyun-sdd 有意保留以下差异：包括 lite 在内的每项变更都保留精简的需求和计划；计划包含精确路径和测试 seam 但不预写完整实现代码；commit/push/merge 始终是独立授权动作；CodeGraph 影响分析和内容指纹属于集成设计。
 
 版权和许可信息见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。

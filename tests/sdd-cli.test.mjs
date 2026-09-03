@@ -37,7 +37,7 @@ function replaceComments(file, replacement = 'Verified repository-specific evide
 }
 
 function fixture() {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'idf-sdd-test-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'xingyun-sdd-test-'));
   write(path.join(root, 'package.json'), JSON.stringify({
     name: 'fixture',
     version: '1.0.0',
@@ -317,7 +317,7 @@ test('session hook reports SDD and CodeGraph context without mutation', () => {
     assert.equal(result.status, 0, result.stderr);
     const output = parseJson(result.stdout);
     assert.equal(output.hookSpecificOutput.hookEventName, 'SessionStart');
-    assert.match(output.hookSpecificOutput.additionalContext, /IDF-SDD/);
+    assert.match(output.hookSpecificOutput.additionalContext, /xingyun-sdd/);
     assert.match(output.hookSpecificOutput.additionalContext, /CodeGraph 索引：已存在/);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });

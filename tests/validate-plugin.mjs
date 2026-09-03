@@ -24,7 +24,7 @@ function readJson(file) {
 const extensionFile = path.join(ROOT, 'codeagent-extension.json');
 check(fs.existsSync(extensionFile), 'Missing codeagent-extension.json');
 const extension = readJson(extensionFile);
-check(extension.name === 'idf-sdd', 'codeagent-extension.json name must be idf-sdd');
+check(extension.name === 'xingyun-sdd', 'codeagent-extension.json name must be xingyun-sdd');
 check(typeof extension.description === 'string' && extension.description.length > 0, 'codeagent-extension.json description must be non-empty');
 check(/^\d+\.\d+\.\d+$/.test(extension.version || ''), 'codeagent-extension.json version must be SemVer');
 
@@ -32,7 +32,7 @@ check(/^\d+\.\d+\.\d+$/.test(extension.version || ''), 'codeagent-extension.json
 const cacPluginFile = path.join(ROOT, '.cac-plugin', 'plugin.json');
 check(fs.existsSync(cacPluginFile), 'Missing .cac-plugin/plugin.json');
 const cacPlugin = readJson(cacPluginFile);
-check(cacPlugin.name === 'idf-sdd', '.cac-plugin/plugin.json name must be idf-sdd');
+check(cacPlugin.name === 'xingyun-sdd', '.cac-plugin/plugin.json name must be xingyun-sdd');
 check(typeof cacPlugin.description === 'string' && cacPlugin.description.length > 0, '.cac-plugin/plugin.json description must be non-empty');
 check(/^\d+\.\d+\.\d+$/.test(cacPlugin.version || ''), '.cac-plugin/plugin.json version must be SemVer');
 

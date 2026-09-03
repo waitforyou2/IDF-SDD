@@ -1,6 +1,6 @@
 ---
 name: isdd-plan
-description: 为 DEFINED 状态的 IDF-SDD 变更生成或修订可执行技术计划，使用 CodeGraph 调用路径、精确符号与文件、垂直切片、依赖边、已确认测试 seam、备选方案、风险和回滚。用户执行 /isdd-plan、询问如何实现已确认需求，或需要根据验证或评审结果重新规划时使用。
+description: 为 DEFINED 状态的 xingyun-sdd 变更生成或修订可执行技术计划，使用 CodeGraph 调用路径、精确符号与文件、垂直切片、依赖边、已确认测试 seam、备选方案、风险和回滚。用户执行 /isdd-plan、询问如何实现已确认需求，或需要根据验证或评审结果重新规划时使用。
 ---
 
 # 制定技术计划

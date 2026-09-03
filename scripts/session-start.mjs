@@ -49,7 +49,7 @@ if (fs.existsSync(changesDirectory)) {
 
 const graphReady = fs.existsSync(path.join(root, '.codegraph'));
 const summary = [
-  '当前仓库使用 IDF-SDD 工作流。',
+  '当前仓库使用 xingyun-sdd 工作流。',
   `CodeGraph 索引：${graphReady ? '已存在' : '缺失；进行结构性代码工作前请执行 /isdd-init'}。`,
   active.length ? `进行中的变更：${active.join(', ')}。` : '当前没有进行中的 SDD 变更。',
   '推进阶段前先阅读 docs/isdd/policy.md。结构性代码问题优先使用 CodeGraph，再使用 grep 或逐文件读取。无法确定当前变更时执行 /isdd-status。'

@@ -1,4 +1,4 @@
-# IDF-SDD 团队策略
+# xingyun-sdd 团队策略
 
 ## 必需流程
 

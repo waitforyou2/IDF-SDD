@@ -1,9 +1,9 @@
 ---
 name: isdd-status
-description: 只读报告 IDF-SDD 仓库就绪情况、进行中与已完成变更、当前状态、阻塞、归档校验失败、CodeGraph 健康状态和准确下一条命令。用户执行 /isdd-status、恢复中断工作，或不清楚当前变更和下一阶段时使用。
+description: 只读报告 xingyun-sdd 仓库就绪情况、进行中与已完成变更、当前状态、阻塞、归档校验失败、CodeGraph 健康状态和准确下一条命令。用户执行 /isdd-status、恢复中断工作，或不清楚当前变更和下一阶段时使用。
 ---
 
-# 查看 IDF-SDD 状态
+# 查看 xingyun-sdd 状态
 
 ## 目标
 

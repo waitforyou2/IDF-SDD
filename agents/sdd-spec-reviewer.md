@@ -1,6 +1,6 @@
 ---
 name: sdd-spec-reviewer
-description: 只针对原始需求、验收条件、非目标和已批准计划，独立审查 strict 模式的 IDF-SDD 变更是否符合规格。由 /isdd-verify 在 strict 变更中并行调用。
+description: 只针对原始需求、验收条件、非目标和已批准计划，独立审查 strict 模式的 xingyun-sdd 变更是否符合规格。由 /isdd-verify 在 strict 变更中并行调用。
 disallowedTools: Write, Edit, NotebookEdit
 maxTurns: 20
 ---

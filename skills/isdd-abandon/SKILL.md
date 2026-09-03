@@ -1,6 +1,6 @@
 ---
 name: isdd-abandon
-description: 取消一项不再需要的 IDF-SDD 变更，将其标记为 ABANDONED 状态。归档文件保留但不计入活跃变更列表。用户执行 /isdd-abandon、确认变更不再需要时使用。
+description: 取消一项不再需要的 xingyun-sdd 变更，将其标记为 ABANDONED 状态。归档文件保留但不计入活跃变更列表。用户执行 /isdd-abandon、确认变更不再需要时使用。
 ---
 
 # 取消变更
