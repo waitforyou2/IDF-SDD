@@ -538,15 +538,27 @@ function detectCommands(root) {
   return { commands, technologies };
 }
 
-function renderRepositoryYaml(root, detection, codegraphEnabled, existingReviewer, existingReviewers) {
+function renderRepositoryYaml(root, detection, codegraphEnabled, reviewerConfig) {
   const commandLines = Object.entries(detection.commands)
     .map(([key, value]) => `  ${key}: ${yamlScalar(value)}`)
     .join('\n');
   let reviewerSection = '';
-  if (existingReviewers && existingReviewers.length > 0) {
-    reviewerSection = `reviewers:\n${existingReviewers.map((item) => `  - ${yamlScalar(item)}`).join('\n')}\n`;
-  } else if (existingReviewer) {
-    reviewerSection = `reviewer: ${yamlScalar(existingReviewer)}\n`;
+  if (reviewerConfig) {
+    if (reviewerConfig.assignees && reviewerConfig.assignees.length > 0) {
+      reviewerSection += `assignees:\n${reviewerConfig.assignees.map((item) => `  - ${yamlScalar(item)}`).join('\n')}\n`;
+    }
+    if (reviewerConfig.approval_reviewers && reviewerConfig.approval_reviewers.length > 0) {
+      reviewerSection += `approval_reviewers:\n${reviewerConfig.approval_reviewers.map((item) => `  - ${yamlScalar(item)}`).join('\n')}\n`;
+    }
+    if (reviewerConfig.approval_approvers && reviewerConfig.approval_approvers.length > 0) {
+      reviewerSection += `approval_approvers:\n${reviewerConfig.approval_approvers.map((item) => `  - ${yamlScalar(item)}`).join('\n')}\n`;
+    }
+    if (!reviewerSection && reviewerConfig.reviewer) {
+      reviewerSection = `reviewer: ${yamlScalar(reviewerConfig.reviewer)}\n`;
+    }
+    if (!reviewerSection && reviewerConfig.reviewers && reviewerConfig.reviewers.length > 0) {
+      reviewerSection = `reviewers:\n${reviewerConfig.reviewers.map((item) => `  - ${yamlScalar(item)}`).join('\n')}\n`;
+    }
   }
   return `workflow_version: ${yamlScalar(WORKFLOW_VERSION)}\ninitialized_at: ${yamlScalar(isoNow())}\nrepository_root: "."\ntechnologies:\n${detection.technologies.length ? detection.technologies.map((item) => `  - ${yamlScalar(item)}`).join('\n') : '  - "unknown"'}\ncommands:\n${commandLines}\ncodegraph:\n  provider: "colbymchenry/codegraph"\n  minimum_version: ${yamlScalar(CODEGRAPH_MIN_VERSION)}\n  enabled: ${codegraphEnabled ? 'true' : 'false'}\n  index_directory: ".codegraph"\n  auto_sync: true\npolicy:\n  file: "docs/isdd/policy.md"\n  default_mode: "standard"\n  require_human_delivery: true\nartifacts:\n  directory: "docs/isdd/changes"\n  commit_with_code: true\n${reviewerSection}`;
 }
@@ -593,16 +605,21 @@ function initRepository(root, flags) {
   const policyFile = path.join(directory, 'policy.md');
   ensureDirectory(path.join(directory, 'changes'));
   const detection = detectCommands(root);
-  let existingReviewer = '';
-  let existingReviewers = [];
+  let reviewerConfig = null;
   if (fs.existsSync(configFile)) {
     const metadata = parseYamlConfig(readText(configFile));
-    existingReviewer = String(metadata.reviewer || '').trim();
-    if (Array.isArray(metadata.reviewers) && metadata.reviewers.length > 0) {
-      existingReviewers = metadata.reviewers.map((item) => String(item).trim()).filter(Boolean);
-    }
+    reviewerConfig = {};
+    reviewerConfig.reviewer = String(metadata.reviewer || '').trim() || null;
+    reviewerConfig.reviewers = (Array.isArray(metadata.reviewers) && metadata.reviewers.length > 0)
+      ? metadata.reviewers.map((item) => String(item).trim()).filter(Boolean) : null;
+    reviewerConfig.assignees = (Array.isArray(metadata.assignees) && metadata.assignees.length > 0)
+      ? metadata.assignees.map((item) => String(item).trim()).filter(Boolean) : null;
+    reviewerConfig.approval_reviewers = (Array.isArray(metadata.approval_reviewers) && metadata.approval_reviewers.length > 0)
+      ? metadata.approval_reviewers.map((item) => String(item).trim()).filter(Boolean) : null;
+    reviewerConfig.approval_approvers = (Array.isArray(metadata.approval_approvers) && metadata.approval_approvers.length > 0)
+      ? metadata.approval_approvers.map((item) => String(item).trim()).filter(Boolean) : null;
   }
-  if (!fs.existsSync(configFile) || flags.force) writeText(configFile, renderRepositoryYaml(root, detection, codegraphEnabled, existingReviewer, existingReviewers));
+  if (!fs.existsSync(configFile) || flags.force) writeText(configFile, renderRepositoryYaml(root, detection, codegraphEnabled, reviewerConfig));
   if (!fs.existsSync(repositoryFile)) copyTemplate('repository.md', repositoryFile);
   if (!fs.existsSync(policyFile)) copyTemplate('policy.md', policyFile);
   const gitignoreChanged = ensureGitignore(root);

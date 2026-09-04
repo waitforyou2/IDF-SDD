@@ -1,6 +1,6 @@
 {
   "name": "xingyun-sdd",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "轻量高效、智能自适应的全链路软件设计与交付工作流，证据驱动双轴审查，全程归档可追溯，从需求到 MR 闭环交付。",
   "mcpServers": {
     "codegraph": {

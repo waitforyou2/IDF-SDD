@@ -68,7 +68,20 @@ description: 完成 VERIFIED 状态的 xingyun-sdd 分支，准备并在获得�
    - **仓库**：从当前 Git remote 解析 `org/repo` 传入 `-p`。
    - **标题**：固定格式 `【xingyun-sdd】【<修改类型>】<简要描述>`。修改类型遵循 Conventional Commits 规范：`feat`（新功能）、`fix`（缺陷修复）、`refactor`（重构）、`docs`（文档）、`chore`（构建/工具）、`test`（测试）、`perf`（性能）、`style`（格式）、`ci`（CI 配置）。从 delivery.md 的【MR类型】字段取修改类型，从【简要描述】取描述内容。
    - **描述**：直接用 `delivery.md` 作为 MR 描述文件，通过 `--no-auto-template -F delivery.md` 传入。不创建临时描述文件，不修改 delivery.md 内容。
-   - **评审人角色分配**：读取 `docs/isdd/repository.yaml` 中的评审人配置。优先读取 `reviewers` 列表字段（多个人号列表），如果不存在则读取 `reviewer` 单字段。将所有人号用逗号拼接，分别传入三个角色参数：`--assignees`（合并人）、`--approval-reviewers`（检视人）、`--approval-approvers`（审核人）。两个字段都没有时，**必须询问用户是否要填写评审人**，告知用户可以跳过（跳过则自行在 CodeHub 网站上填写），用户提供后写入 `repository.yaml`。
+   - **评审人角色分配**：读取 `docs/isdd/repository.yaml` 中的三个角色配置，分别传入对应的 CLI 参数：
+     - `assignees`（合并人）→ `--assignees`
+     - `approval_reviewers`（检视人）→ `--approval-reviewers`
+     - `approval_approvers`（审核人）→ `--approval-approvers`
+     
+     每个角色的人号列表用逗号拼接传入。**任何一个角色字段为空时，必须执行 fallback 查询继承历史 MR 的角色分配**，而不是直接跳过：
+     
+     **fallback 查询步骤**：
+     1. 用 `codehub-cli mr list -p "<org/repo>" --state merged --author <当前用户工号> --limit 1 --format json` 查询当前用户在此仓库最近一次已合入的 MR。
+     2. 如果查到 MR，用 `codehub-cli mr view -p "<org/repo>" <mr-iid> --format json` 获取角色字段：`assignee.username`（合并人）、`approval_merge_request_reviewers[].username`（检视人）、`approval_merge_request_approvers[].username`（审核人）。将继承的人号填入 `repository.yaml` 对应字段，并告知用户"已从你最近一次合入的 MR #<iid> 继承评审人配置"。
+     3. 如果当前用户在此仓库没有已合入 MR，则用 `codehub-cli mr list -p "<org/repo>" --state merged --limit 1 --format json` 查询仓库最近一次已合入的 MR（不限作者），同样用 `mr view` 获取角色字段继承。告知用户"已从仓库最近一次合入的 MR #<iid> 继承评审人配置"。
+     4. 如果仓库没有任何已合入 MR（新仓库），**必须询问用户填写**，告知用户可以跳过（跳过则自行在 CodeHub 网站上填写）。用户提供后写入 `repository.yaml`。
+     
+     fork 模式下查询 MR 时使用主仓库路径（同步骤 5 的 fork 检测逻辑获取主仓库路径）。
    - **E2E 单号**：从 `spec.md` 的 frontmatter `e2e_issue` 字段获取，传入 `--e2e-issues`。**字段为空时必须询问用户提供，用户必须提供单号才能创建 MR。** 用户提供后更新 `spec.md` 的 `e2e_issue` 字段和 `delivery.md` 的需求单号章节，再创建 MR。
    - **Squash**：默认不开 `--squash`；用户明确要求时再加 `--squash --squash-commit-message "【xingyun-sdd】【<修改类型>】<简要描述>"`。
 
@@ -80,9 +93,9 @@ description: 完成 VERIFIED 状态的 xingyun-sdd 分支，准备并在获得�
      --target-branch "<目标分支>" \
      --title "【xingyun-sdd】【<修改类型>】<简要描述>" \
      --no-auto-template -F delivery.md \
-     --assignees "<评审人工号,逗号分隔>" \
-     --approval-reviewers "<评审人工号,逗号分隔>" \
-     --approval-approvers "<评审人工号,逗号分隔>" \
+     --assignees "<合并人工号,逗号分隔>" \
+     --approval-reviewers "<检视人工号,逗号分隔>" \
+     --approval-approvers "<审核人工号,逗号分隔>" \
      --e2e-issues "<E2E单号>"
    ```
 
@@ -96,9 +109,9 @@ description: 完成 VERIFIED 状态的 xingyun-sdd 分支，准备并在获得�
      --target-project-id "<主仓库项目ID>" \
      --title "【xingyun-sdd】【<修改类型>】<简要描述>" \
      --no-auto-template -F delivery.md \
-     --assignees "<评审人工号,逗号分隔>" \
-     --approval-reviewers "<评审人工号,逗号分隔>" \
-     --approval-approvers "<评审人工号,逗号分隔>" \
+     --assignees "<合并人工号,逗号分隔>" \
+     --approval-reviewers "<检视人工号,逗号分隔>" \
+     --approval-approvers "<审核人工号,逗号分隔>" \
      --e2e-issues "<E2E单号>"
    ```
 
