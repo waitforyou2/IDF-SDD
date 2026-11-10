@@ -59,8 +59,8 @@ const hooksRaw = fs.readFileSync(path.join(ROOT, 'hooks', 'hooks.json'), 'utf8')
 check(!hooksRaw.includes('CLAUDE_PLUGIN_ROOT'), 'hooks.json must not use ${CLAUDE_PLUGIN_ROOT}');
 check(hooksRaw.includes('CODEAGENT3_PLUGIN_ROOT'), 'hooks.json must reference ${CODEAGENT3_PLUGIN_ROOT}');
 
-// 8. skills（8 个，目录名 = SKILL.md name 字段，加 sdd- 前缀）
-const expectedSkills = ['isdd-init', 'isdd-define', 'isdd-plan', 'isdd-build', 'isdd-verify', 'isdd-ship', 'isdd-status', 'isdd-abandon'];
+// 8. skills（isdd-* 技能 + security-audit 技能）
+const expectedSkills = ['isdd-init', 'isdd-define', 'isdd-plan', 'isdd-build', 'isdd-verify', 'isdd-ship', 'isdd-status', 'isdd-abandon', 'security-audit'];
 for (const name of expectedSkills) {
   const file = path.join(ROOT, 'skills', name, 'SKILL.md');
   check(fs.existsSync(file), `Missing skill: ${name}`);

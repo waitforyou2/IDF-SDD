@@ -134,7 +134,7 @@ test('README 说明社区复用、适配边界和许可', () => {
 });
 
 test('全部面向智能体的工作流文档使用中文说明', () => {
-  const skillNames = ['isdd-init', 'isdd-define', 'isdd-plan', 'isdd-build', 'isdd-verify', 'isdd-ship', 'isdd-status'];
+  const skillNames = ['isdd-init', 'isdd-define', 'isdd-plan', 'isdd-build', 'isdd-verify', 'isdd-ship', 'isdd-status', 'security-audit'];
   for (const name of skillNames) {
     const content = skill(name);
     assert.match(content, /^description:\s*[^\n]*[\u4e00-\u9fff]/m, `${name} 的触发描述必须为中文`);
