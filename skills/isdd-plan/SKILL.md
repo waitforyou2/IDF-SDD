@@ -13,7 +13,7 @@ description: 为 DEFINED 状态的 xingyun-sdd 变更生成或修订可执行技
 
 ## 执行流程
 
-1. 未明确 change id 时，通过 `/isdd-status` 解析。要求当前状态为 `DEFINED`。
+1. 未明确 change id 时，通过 `/isdd-status` 解析。要求当前状态为 `DEFINED`；验证或评审失败后的返工重新规划也允许 `PLANNED`（对应 `VERIFIED → PLANNED` 返工路径，此时修订已有 plan.md）。
 2. 阅读 `spec.md`、`docs/isdd/repository.md`、`docs/isdd/policy.md`、[模式规范](../../references/modes.md)、[CodeGraph 集成规范](../../references/codegraph.md)和[归档契约](../../references/artifacts.md)。
 3. 创建 `plan.md`：
 

@@ -40,8 +40,12 @@ test('define 按风险调整澄清深度并保持范围和术语一致', () => {
     '仓库统一语言',
     '自行检查规格',
     'lite 模式只有在待决问题',
-    '此阶段不得设计技术方案'
+    '此阶段不得设计技术方案',
+    '安全面'
   ], 'define');
+
+  const template = read('assets/templates/spec.md');
+  includesAll(template, ['## 安全面'], 'spec 模板');
 });
 
 test('plan 强制垂直切片、依赖边、测试 seam 和计划自检', () => {
@@ -84,6 +88,7 @@ test('verify 保持需求符合度和工程质量相互独立', () => {
   includesAll(content, [
     '**需求符合度：**',
     '**工程质量：**',
+    '聚焦安全审查',
     '在用作证据前重新执行',
     'sdd-spec-reviewer',
     'sdd-quality-reviewer',
@@ -92,7 +97,7 @@ test('verify 保持需求符合度和工程质量相互独立', () => {
   ], 'verify');
 
   const template = read('assets/templates/verification.md');
-  includesAll(template, ['### 需求符合度', '### 工程质量'], 'verification 模板');
+  includesAll(template, ['### 需求符合度', '### 工程质量', '### 聚焦安全审查'], 'verification 模板');
   assert.ok(fs.existsSync(path.join(PLUGIN_ROOT, 'agents', 'sdd-spec-reviewer.md')));
   assert.ok(fs.existsSync(path.join(PLUGIN_ROOT, 'agents', 'sdd-quality-reviewer.md')));
 });

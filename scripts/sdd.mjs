@@ -565,12 +565,25 @@ function renderRepositoryYaml(root, detection, codegraphEnabled, reviewerConfig)
 
 function ensureGitignore(root) {
   const file = path.join(root, '.gitignore');
-  const current = fs.existsSync(file) ? readText(file) : '';
-  const lines = current.split(/\r?\n/).map((line) => line.trim());
-  if (lines.includes('.codegraph/') || lines.includes('/.codegraph/')) return false;
-  const separator = current.length > 0 && !current.endsWith('\n') ? '\n' : '';
-  writeText(file, `${current}${separator}\n# 本地 CodeGraph 索引（可重建缓存）\n.codegraph/\n`);
-  return true;
+  let content = fs.existsSync(file) ? readText(file) : '';
+  const lines = content.split(/\r?\n/).map((line) => line.trim());
+  const appendBlock = (block) => {
+    const separator = content.length > 0 && !content.endsWith('\n') ? '\n' : '';
+    content += `${separator}\n${block}\n`;
+  };
+  let changed = false;
+  if (!lines.includes('.codegraph/') && !lines.includes('/.codegraph/')) {
+    appendBlock('# 本地 CodeGraph 索引（可重建缓存）\n.codegraph/');
+    changed = true;
+  }
+  const localDocs = ['docs/isdd/repository.md', 'docs/isdd/repository.yaml', 'docs/isdd/policy.md']
+    .filter((doc) => !lines.includes(doc));
+  if (localDocs.length > 0) {
+    appendBlock(`# xingyun-sdd 本地辅助文档（每次 init 重新生成）\n${localDocs.join('\n')}`);
+    changed = true;
+  }
+  if (changed) writeText(file, content);
+  return changed;
 }
 
 function initRepository(root, flags) {
@@ -653,8 +666,8 @@ function initRepository(root, flags) {
 function classifyMode(text, flags) {
   const normalized = String(text || '').toLowerCase();
   const strictPatterns = [
-    /auth(?:entication|orization)?|oauth|jwt|permission|role|payment|billing|secret|crypt|personal data|pii|migration|database schema|public api|breaking change|infrastructure|deploy|distributed|concurrency/,
-    /认证|鉴权|授权|权限|角色|支付|账单|密钥|加密|隐私|个人信息|迁移|数据库结构|公共接口|破坏性变更|基础设施|部署|分布式|并发/
+    /auth(?:entication|orization)?|oauth|jwt|permission|role|payment|billing|secret|crypt|personal data|pii|migration|database schema|public api|breaking change|infrastructure|deploy|distributed|concurrency|hotfix|hot fix/,
+    /认证|鉴权|授权|权限|角色|支付|账单|密钥|加密|隐私|个人信息|迁移|数据库结构|公共接口|破坏性变更|基础设施|部署|分布式|并发|紧急修复|线上紧急/
   ];
   const litePatterns = [
     /add (?:a )?field|rename|copy change|text change|guard clause|simple if|small config|typo/,
@@ -841,7 +854,8 @@ function validateSpec(root, id) {
     '非目标',
     '验收条件',
     '风险与假设',
-    '模式说明'
+    '模式说明',
+    '安全面'
   ]);
   if (!fs.existsSync(file)) return errors;
   const { metadata } = parseFrontmatter(readText(file));
@@ -896,6 +910,7 @@ function validateVerification(root, id) {
   const content = readText(file);
   if (!/^###\s+\u9700\u6c42\u7b26\u5408\u5ea6\s*$/m.test(content)) errors.push('verification.md 必须包含独立的需求符合度审查。');
   if (!/^###\s+\u5de5\u7a0b\u8d28\u91cf\s*$/m.test(content)) errors.push('verification.md 必须包含独立的工程质量审查。');
+  if (!/^###\s+聚焦安全审查\s*$/m.test(content)) errors.push('verification.md 必须包含独立的聚焦安全审查章节。');
   if (!/^Verdict:\s*PASS\s*$/im.test(content)) errors.push('verification.md 必须包含完全匹配的 `Verdict: PASS` 行。');
   if (/\|\s*FAIL\s*\|/i.test(content)) errors.push('verification.md 的验收证据表中仍有失败项。');
   const codecheckContent = (sectionMap(content).get('CodeCheck 门禁') || '').replace(/<!--[\s\S]*?-->/g, '').trim();
@@ -1077,7 +1092,8 @@ function status(root, flags) {
     repository_ready: repositoryErrors.length === 0,
     repository_errors: repositoryErrors,
     active_changes: changes.filter((change) => change.state !== 'DONE' && change.state !== 'ABANDONED'),
-    completed_changes: changes.filter((change) => change.state === 'DONE')
+    completed_changes: changes.filter((change) => change.state === 'DONE'),
+    abandoned_changes: changes.filter((change) => change.state === 'ABANDONED')
   });
 }
 
@@ -1113,6 +1129,7 @@ function validate(root, flags) {
 }
 
 function block(root, flags) {
+  requireInitialized(root);
   const id = safeId(flags.id);
   const reason = String(flags.reason || '').trim();
   if (!reason) fail('block 必须提供 --reason。');
@@ -1125,9 +1142,11 @@ function block(root, flags) {
 }
 
 function abandon(root, flags) {
+  requireInitialized(root);
   const id = safeId(flags.id);
   const change = loadChange(root, id);
   if (change.metadata.state === 'DONE') fail('已完成的变更不能取消。如需回滚，请新建变更。');
+  if (change.metadata.state === 'ABANDONED') fail('变更已是 ABANDONED 状态，无需重复取消。');
   change.metadata.state = 'ABANDONED';
   change.metadata.blocked = 'true';
   change.metadata.block_reason = String(flags.reason || '').trim() || '变更已取消';

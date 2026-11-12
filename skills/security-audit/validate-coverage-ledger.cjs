@@ -721,15 +721,20 @@ function collectUnitErrors(unit, index) {
 function readFileWithinLimit(file) {
   const noFollow = fs.constants.O_NOFOLLOW;
   const nonBlock = fs.constants.O_NONBLOCK;
-  if (!Number.isInteger(noFollow) || noFollow === 0 || !Number.isInteger(nonBlock) || nonBlock === 0) {
-    // Node exposes no race-safe fallback on these platforms, so reject all inputs.
-    throw new SafeInputError("OS no-follow and nonblocking input protection is unavailable");
-  }
+  const raceSafe = Number.isInteger(noFollow) && noFollow !== 0 && Number.isInteger(nonBlock) && nonBlock !== 0;
 
   let descriptor;
   try {
-    descriptor = fs.openSync(file, fs.constants.O_RDONLY | noFollow | nonBlock);
+    if (raceSafe) {
+      descriptor = fs.openSync(file, fs.constants.O_RDONLY | noFollow | nonBlock);
+    } else {
+      // Platforms without O_NOFOLLOW/O_NONBLOCK (e.g. Windows): reject symlinks via lstat
+      // before opening. Not race-safe, but preserves the symlink-rejection intent.
+      if (fs.lstatSync(file).isSymbolicLink()) throw new SafeInputError("input must not be a symlink");
+      descriptor = fs.openSync(file, fs.constants.O_RDONLY);
+    }
   } catch (error) {
+    if (error instanceof SafeInputError) throw error;
     if (error && (error.code === "ELOOP" || error.code === "EMLINK")) throw new SafeInputError("input must not be a symlink");
     throw error;
   }
