@@ -33,6 +33,8 @@
 
 ## 状态归属
 
+Java MVC 项目在 DEFINED → PLANNED 和进入 BUILT 时检查当前接口场景计划。进入 VERIFIED 与 DONE 时检查已通过且匹配当前源代码、需求及计划的接口测试 run，DONE 还须匹配 VERIFIED 记录的 run。MR 小修复先在 DONE 上收集当前证据，过门禁后再刷新 VERIFIED 指纹。
+
 `docs/isdd/changes/<id>/spec.md` 的 YAML frontmatter 是变更状态的唯一权威来源。代码托管平台状态和 Issue 状态可以同步，但不能替代它。
 
 流转到 `VERIFIED` 时，工具会记录从 `base_ref` 开始的全部实现文件内容指纹。流转到 `DONE` 时会校验该指纹是否仍然匹配。创建提交不会改变指纹，但验证后的文件修改会阻止交付。此时可以直接重新执行 `/isdd-verify`（即 `VERIFIED → VERIFIED`）刷新指纹，无需先回退到 `BUILT`。

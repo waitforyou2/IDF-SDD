@@ -981,6 +981,31 @@ function validateChangeForState(root, id, state) {
   return errors;
 }
 
+function apiTestApplies(root, change) {
+  const config = 'config/isdd/api-tests.json';
+  if (change.metadata.verified_api_run || fs.existsSync(path.join(root, config)) ||
+      fs.existsSync(path.join(root, 'config/isdd/api-plans', change.metadata.id + '.json'))) return true;
+  const base = change.metadata.base_ref;
+  if (base && base !== 'unborn' && run('git', ['cat-file', '-e', base + ':' + config], { cwd: root }).status === 0) return true;
+  // Detect unenrolled MVC projects too, including multi-module services. Exclude test fixtures.
+  const sources = gitLines(root, ['-c', 'core.quotepath=false', 'ls-files', '--cached', '--others', '--exclude-standard', '--', '*.java']);
+  return sources.some((name) => {
+    if (!/(?:^|\/)src\/main\/java\//.test(name) || /(?:^|\/)(?:fixtures|src\/test)\//.test(name)) return false;
+    const file = path.join(root, name);
+    return fs.existsSync(file) && /@(?:[\w.]+\.)?(?:RestController|Controller|RequestMapping)\b/.test(readText(file));
+  });
+}
+
+function apiReceipt(root, change, action = 'check') {
+  const runner = path.join(PLUGIN_ROOT, 'skills/isdd-api-test/scripts/api_test.py');
+  const args = [runner, action, '--root', root, '--change', change.metadata.id, '--base', change.metadata.base_ref,
+    '--minimum-changed-unit', '80'];
+  const python = process.env.ISDD_PYTHON || (process.platform === 'win32' ? 'python' : 'python3');
+  const result = run(python, args, { cwd: root, timeout: 120_000 });
+  if (result.status !== 0) fail('接口业务测试门禁未通过；运行本轮 /isdd-api-test verify 并检查报告。', result.stderr || result.error?.message);
+  return JSON.parse(result.stdout);
+}
+
 function transition(root, flags) {
   requireInitialized(root);
   const id = safeId(flags.id);
@@ -992,6 +1017,14 @@ function transition(root, flags) {
     fail(`不允许从 ${current} 转换到 ${target}。`, { allowed: [...ALLOWED_TRANSITIONS.get(current)] });
   }
 
+  let receipt;
+  if ((target === 'PLANNED' && current === 'DEFINED' || target === 'BUILT') && apiTestApplies(root, change))
+    apiReceipt(root, change, 'plan-check');
+  if ((target === 'VERIFIED' || target === 'DONE') && apiTestApplies(root, change)) {
+    receipt = apiReceipt(root, change);
+    if (target === 'DONE' && receipt.run !== change.metadata.verified_api_run)
+      fail('接口证据与 VERIFIED 归档不一致，请重新验证。');
+  }
   if (target === 'DONE') {
     const deliveryRef = String(flags['delivery-ref'] || '').trim();
     if (!deliveryRef) fail('创建 MR 后，转换到 DONE 必须提供 --delivery-ref <MR URL>。');
@@ -1020,9 +1053,11 @@ function transition(root, flags) {
   if (target === 'VERIFIED') {
     const fingerprint = changeFingerprint(root, change.metadata.base_ref);
     change.metadata.verified_fingerprint = fingerprint.value;
+    if (receipt) change.metadata.verified_api_run = receipt.run;
   }
   if (target === 'PLANNED' || target === 'DRAFT' || target === 'DEFINED') {
     change.metadata.verified_fingerprint = '';
+    delete change.metadata.verified_api_run;
     change.metadata.delivery_ref = '';
   }
   change.metadata.state = target;
@@ -1110,6 +1145,11 @@ function validate(root, flags) {
     const change = loadChange(root, id);
     const errors = validateChangeForState(root, id, change.metadata.state);
     if (errors.length) fail(`变更校验失败：${id}`, errors);
+    if (change.metadata.state === 'VERIFIED' && apiTestApplies(root, change)) {
+      const receipt = apiReceipt(root, change);
+      if (receipt.run !== change.metadata.verified_api_run)
+        fail('接口证据与 VERIFIED 归档不一致，请重新验证。');
+    }
     emit({ ok: true, scope: 'change', id, state: change.metadata.state });
     return;
   }

@@ -13,7 +13,7 @@ description: 将需求符合度和工程质量作为两个独立审查轴，使�
 
 ## 执行流程
 
-1. 解析 change id，要求当前状态为 `BUILT` 或 `VERIFIED`（`VERIFIED` 表示重新验证，用于验证后文件变更需刷新指纹的场景）。阅读 `spec.md`、`plan.md`、`docs/isdd/policy.md`、`docs/isdd/repository.yaml`、[CodeGraph 集成规范](../../references/codegraph.md)和[归档契约](../../references/artifacts.md)。
+1. 解析 change id，接受 `BUILT`、需刷新指纹的 `VERIFIED` 或 MR 小修复中的 `DONE`。阅读 `spec.md`、`plan.md`、`docs/isdd/policy.md`、`docs/isdd/repository.yaml`、[CodeGraph 集成规范](../../references/codegraph.md)和[归档契约](../../references/artifacts.md)。
 2. 影响分析前同步并检查 CodeGraph：
 
    ```bash
@@ -42,6 +42,7 @@ description: 将需求符合度和工程质量作为两个独立审查轴，使�
    - 记录扫描范围（文件列表）、初始告警数量、fix 自动修复数量、AI 手动修复数量、修复结果和最终状态到 verification.md 的 CodeCheck 门禁章节。0 告警时写"无告警"。
    - **禁止以"不影响""误报""已忽略"等任何理由跳过告警**。verification.md 的 CodeCheck 门禁章节必须明确写"无告警"或"全部已修复"，否则流转到 VERIFIED 会被门禁拒绝。
    - 告警全部修复且复查无新增告警后才能通过验证。
+   - Java Spring MVC 在 CodeCheck 和全部修复结束后执行 [isdd-api-test verify](../isdd-api-test/SKILL.md)，传入当前 change id 和 spec.base_ref。记录本轮 run、接口分子/分母、缺口、计划场景关联、UT/合并与增量行覆盖。SDD 增量 UT 目标为 80%。transition VERIFIED / DONE 自动运行同一个 check。MR 小修复允许从 DONE 进入本流程取证，成功后才刷新指纹；失败保持 DONE 和原始证据，停止交付。
 7. 分别执行两项审查，任何一项都不能替代另一项：
    - **需求符合度：** 把每条验收条件映射到证据，检查可观察行为、非目标、范围漂移和已记录的计划偏差。
    - **工程质量：** 检查仓库规范、测试质量与 seam、正确性、错误处理、安全、性能、兼容、数据安全、依赖、死代码、文档、运维和回滚。按 `docs/isdd/policy.md` 的 DT 编写规范检查测试命名、文件组织、覆盖率和断言有效性。
@@ -59,7 +60,7 @@ description: 将需求符合度和工程质量作为两个独立审查轴，使�
    - Lite：在 `verification.md` 中简洁但明确地分别记录两项审查。
    - Standard：分两次独立执行审查；平台支持时使用新鲜的只读 Agent，不支持时记录该限制。
    - Strict：使用隔离上下文并行派发 `sdd-spec-reviewer` 和 `sdd-quality-reviewer`。只提供原始 spec、plan、固定 diff、CodeGraph 证据和实际命令输出，不得提供预期结论。合并报告并解决全部阻塞问题。
-10. 任何检查或审查失败时，保留失败证据，验证阶段不得修改实现。写入 `Verdict: FAIL` 并返回规划状态：
+10. 任何检查或审查失败时保留失败证据，验证阶段不得修改实现。写入 `Verdict: FAIL`。DONE 状态的小修复停止交付；其他验证失败返回规划状态：
 
    ```bash
    node "${CODEAGENT3_PLUGIN_ROOT}/scripts/sdd.mjs" transition --id <id> --to PLANNED --root "${CLAUDE_PROJECT_DIR}"

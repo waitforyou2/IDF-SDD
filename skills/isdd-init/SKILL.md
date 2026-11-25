@@ -58,6 +58,8 @@ description: 初始化或修复业务 Git 仓库的 xingyun-sdd 环境，建立�
 
 11. 报告新增或修改的文件、CodeGraph 健康状态、工具链安装和认证状态、未完成 MR 提醒、识别出的工程命令、验证证据，以及仍需团队确认的事实。工具链安装状态只在会话报告中告知用户，不写入 `repository.md`。
 
+识别 Java Spring MVC 业务模块、发布配置、wrapper 和真实的接口测试构建入口。将跨开发机和 CI 的配置提交在 config/isdd/api-tests.json；本地 repository.yaml 可记录发现结果。[接口测试接入](../isdd-api-test/references/setup.md)
+
 ## 完成条件
 
 - `docs/isdd/repository.yaml`、`docs/isdd/repository.md` 和 `docs/isdd/policy.md` 均通过校验。

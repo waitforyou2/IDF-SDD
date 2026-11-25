@@ -60,7 +60,7 @@ check(!hooksRaw.includes('CLAUDE_PLUGIN_ROOT'), 'hooks.json must not use ${CLAUD
 check(hooksRaw.includes('CODEAGENT3_PLUGIN_ROOT'), 'hooks.json must reference ${CODEAGENT3_PLUGIN_ROOT}');
 
 // 8. skills（isdd-* 技能 + security-audit 技能）
-const expectedSkills = ['isdd-init', 'isdd-define', 'isdd-plan', 'isdd-build', 'isdd-verify', 'isdd-ship', 'isdd-status', 'isdd-abandon', 'security-audit'];
+const expectedSkills = ['isdd-init', 'isdd-define', 'isdd-plan', 'isdd-build', 'isdd-verify', 'isdd-ship', 'isdd-status', 'isdd-abandon', 'isdd-api-test', 'security-audit'];
 for (const name of expectedSkills) {
   const file = path.join(ROOT, 'skills', name, 'SKILL.md');
   check(fs.existsSync(file), `Missing skill: ${name}`);
@@ -79,6 +79,10 @@ for (const name of expectedSkills) {
 }
 
 // 9. agents（2 个只读审查智能体）
+for (const file of ['scripts/api_test.py', 'scripts/coverage.py', 'assets/ApiEvidence.java',
+  'references/setup.md', 'references/scenarios.md']) {
+  check(fs.existsSync(path.join(ROOT, 'skills/isdd-api-test', file)), `Missing standalone API test resource: ${file}`);
+}
 const expectedAgents = ['sdd-spec-reviewer', 'sdd-quality-reviewer'];
 for (const name of expectedAgents) {
   const file = path.join(ROOT, 'agents', `${name}.md`);

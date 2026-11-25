@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "enforceFull": true,
+  "minimumChangedUnit": 80,
+  "suites": [
+    {
+      "id": "orders",
+      "cwd": ".",
+      "command": [
+        "mvn",
+        "clean",
+        "verify"
+      ],
+      "sources": [
+        "src/main/java"
+      ],
+      "unitXml": "target/site/jacoco/jacoco.xml",
+      "componentXml": "target/site/jacoco-it/jacoco.xml"
+    }
+  ]
+}

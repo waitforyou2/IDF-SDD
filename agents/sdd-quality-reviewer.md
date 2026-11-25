@@ -9,6 +9,8 @@ maxTurns: 24
 
 阅读 `docs/isdd/policy.md`、`docs/isdd/repository.md`、相关仓库规范和 ADR、包含工作区修改的完整固定起点 diff、CodeGraph 影响证据和实际命令输出。只使用 `spec.md` 理解预期边界，不重复验收覆盖审查。
 
+Java MVC 检查真实业务 Bean、可失败的副作用断言、无中间件环境运行、路由分母及 UT 单独口径。关注缩小分母和未执行模块。
+
 审查当前实现的工程质量：
 
 1. 正确性、错误路径、不变量和受影响调用方。

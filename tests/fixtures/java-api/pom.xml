@@ -1,0 +1,25 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>example</groupId><artifactId>order-fixture</artifactId><version>1</version>
+  <parent><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-parent</artifactId><version>3.5.7</version><relativePath/></parent>
+  <properties><java.version>21</java.version></properties>
+  <dependencies>
+    <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>
+    <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-test</artifactId><scope>test</scope></dependency>
+  </dependencies>
+  <build><plugins>
+    <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-failsafe-plugin</artifactId>
+      <executions><execution><goals><goal>integration-test</goal><goal>verify</goal></goals></execution></executions>
+      <configuration><argLine>@{itAgent}</argLine></configuration>
+    </plugin>
+    <plugin><groupId>org.jacoco</groupId><artifactId>jacoco-maven-plugin</artifactId><version>0.8.13</version>
+      <executions>
+        <execution><id>ut-agent</id><goals><goal>prepare-agent</goal></goals></execution>
+        <execution><id>it-agent</id><goals><goal>prepare-agent-integration</goal></goals>
+          <configuration><propertyName>itAgent</propertyName></configuration></execution>
+        <execution><id>ut-report</id><phase>verify</phase><goals><goal>report</goal></goals></execution>
+        <execution><id>it-report</id><phase>verify</phase><goals><goal>report-integration</goal></goals></execution>
+      </executions>
+    </plugin>
+  </plugins></build>
+</project>

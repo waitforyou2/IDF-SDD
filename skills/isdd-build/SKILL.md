@@ -37,6 +37,8 @@ description: 按依赖顺序逐个垂直切片实现或修复 PLANNED 状态的 
    node "${CODEAGENT3_PLUGIN_ROOT}/scripts/sdd.mjs" transition --id <id> --to BUILT --root "${CLAUDE_PROJECT_DIR}"
    ```
 
+Java Spring MVC 切片调用 [isdd-api-test write](../isdd-api-test/SKILL.md)，按同一份批准计划编写 UT 与 MockMvc 组件测试，保留业务服务，替换数据库、Redis、MQ 和远程客户端。优先复用已有测试设施，断言确实依赖状态时才随用例就近编写所需的 Fake。纯补测以 audit 缺口为基线，新增行为先看到预期失败再转绿。
+
 ## 完成条件
 
 - 所有实现任务已完成，或计划已显式修订。

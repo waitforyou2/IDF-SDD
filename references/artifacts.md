@@ -17,6 +17,8 @@
 
 ## 编写规则
 
+Java REST 团队配置在 config/isdd/api-tests.json，单项变更场景在 config/isdd/api-plans/<id>.json，均随业务代码提交。verification.md 归档可读结果和 run 标识；CI 可保留 .isdd-api/runs/<run>/report.json。临时采集明细按构建产物管理。
+
 - 记录事实和决策，不记录 Agent 对话流水账。
 - lite 模式保持精简，但不得缺少要求内容。
 - 符号和路径使用仓库相对路径。

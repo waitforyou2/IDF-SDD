@@ -15,6 +15,7 @@ description: 完成 VERIFIED 状态的 xingyun-sdd 分支，准备并在获得�
 
 1. 解析 change id。阅读 `spec.md`、`plan.md`、`verification.md`、`docs/isdd/policy.md`、[工作流契约](../../references/workflow.md)、[归档契约](../../references/artifacts.md)和[CodeHub CLI 命令参考](../../references/codehub-cli-reference.md)。
 2. 要求当前状态为 `VERIFIED`。检查 Git 状态和范围内完整 diff。状态工具会比较当前变更文件内容指纹与验证阶段指纹；任何实现修改都会阻止交付。此时可直接重新执行 `/isdd-verify` 刷新指纹，无需回退状态。
+   Java MVC 在 commit、push 或创建/更新 MR 前先运行 `node "${CODEAGENT3_PLUGIN_ROOT}/scripts/sdd.mjs" validate --id <id> --root "${CLAUDE_PROJECT_DIR}"`，确认证据仍然对应当前代码和 VERIFIED 批次。失败时停止外部交付。
 3. 创建或复用 `delivery.md`：
 
    ```bash
@@ -189,11 +190,12 @@ description: 完成 VERIFIED 状态的 xingyun-sdd 分支，准备并在获得�
 
       回复完成后，根据返工规模选择路径：
       - **小问题修复**（修改了代码但不改变设计方案）：
-        - 流转到 `VERIFIED`：`transition --id <id> --to VERIFIED`（`delivery_ref` 保留，MR 仍然有效）。
+        - 先取得当前代码证据；已有 MR 保留。
         - **修复后门禁检查**（必须全部通过才能 push）：
           1. 编译：运行项目构建命令确认编译通过。
           2. 单元测试：运行全部 UT 确认无失败（不只是新增测试，包括受影响的现有测试）。
           3. CodeCheck：运行 `codecheck fullcheck -f "<变更文件>"` 确认无告警。有告警则按 verify 阶段的扫描-修复循环处理。
+          4. 复用 /isdd-verify 对最终代码取证。Java MVC 重跑 isdd-api-test verify，核对计划场景与覆盖。全部通过才执行 DONE → VERIFIED，保留 delivery_ref；失败时停止 push。
         - 门禁全部通过后，重新执行 ship 流程：ship 会检测到 `delivery_ref` 有值且 MR 为 `opened` → 复用已有 MR（push 代码 + `mr update` 更新描述），不重复创建。
         - 通知用户修复已完成，询问是否继续后台监控 → 继续则重新启动 9a 监控循环。
       - **全流程返工**（评审意见提出不同实现方式，需要重新设计需求）：

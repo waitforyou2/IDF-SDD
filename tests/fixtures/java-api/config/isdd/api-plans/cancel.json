@@ -1,0 +1,11 @@
+{
+  "mode": "change",
+  "scenarios": [
+    {
+      "suite": "orders",
+      "operation": "POST /orders/{id}/cancel",
+      "id": "reject-shipped",
+      "expected": "已发货订单返回 409，存储、幂等键和消息没有写入。"
+    }
+  ]
+}

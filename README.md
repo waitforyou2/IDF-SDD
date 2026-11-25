@@ -4,6 +4,8 @@
 
 xingyun-sdd 是一个 AI 驱动的软件开发工作流插件。从需求定义到 MR 交付，全程有规范、有归档、有门禁。**任何需求——不管是加个字段还是重构架构——都走同一套流程，简单变更自动轻量，高风险变更自动加严。**
 
+Java 21 Spring MVC 服务可单独复制 [isdd-api-test](skills/isdd-api-test/SKILL.md) 整个目录，无需初始化 SDD。用 audit 盘点、plan 设计、write/backfill 编写、verify 验收、report 查看结果。SDD 的 plan、build、verify 和 MR 小修复复用同一套证据。[接入 Maven / Gradle](skills/isdd-api-test/references/setup.md)
+
 ## 快速开始
 
 ### 1. 安装插件
@@ -86,7 +88,7 @@ AI 用 CodeGraph 分析调用链，拆成垂直切片任务，每个任务包含
 
 填写 `delivery.md` → 用户授权 commit/push → 自动创建 CodeHub MR（fork/非 fork 自动判断）→ 后台监控 MR 状态、门禁和评审意见。
 
-**评审意见处理：** 发现检视意见时停止监控，AI 逐条分析（5 种分类：需要修改/已修复/不合理/风格偏好/无需修改），修复后过编译/UT/CodeCheck 三道门禁再 push 回 MR。
+**评审意见处理：** 发现检视意见时停止监控，AI 逐条分析（5 种分类：需要修改/已修复/不合理/风格偏好/无需修改）。修复后执行编译、UT 和 CodeCheck；Java MVC 服务重新验证接口场景及覆盖证据，全部通过后再 push 回 MR。
 
 ## 流程模式
 
@@ -176,6 +178,8 @@ MR 是远端两个分支的对比，源分支必须已 push。先 `--push` 再 `
 npm test
 npm run validate
 ```
+
+Java 接口能力可用 `python tests/api-metrics-test.py` 快速验证统计逻辑。设置 JDK 21、Maven（可从本地缓存解析测试依赖）和 Python 后，运行 `npm run test:java-api`。它在临时业务仓实测独立 Skill、漏测、业务回归、行覆盖和 SDD/MR 状态门禁。Maven 和 Gradle 可运行的构建配置见 [订单服务样例](tests/fixtures/java-api/)。
 
 ## 社区能力来源
 

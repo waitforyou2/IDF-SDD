@@ -1,0 +1,33 @@
+plugins {
+    id 'java'
+    id 'jacoco'
+}
+repositories { mavenCentral() }
+java { toolchain { languageVersion = JavaLanguageVersion.of(21) } }
+dependencies {
+    implementation platform('org.springframework.boot:spring-boot-dependencies:3.5.7')
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+tasks.withType(JavaCompile).configureEach { options.compilerArgs += '-parameters' }
+tasks.withType(Test).configureEach { useJUnitPlatform() }
+test { exclude '**/*IT.class' }
+def integrationTest = tasks.register('integrationTest', Test) {
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    include '**/*IT.class'
+    shouldRunAfter test
+}
+jacoco { toolVersion = '0.8.13' }
+jacocoTestReport {
+    dependsOn test
+    reports { xml.required = true }
+}
+tasks.register('jacocoIntegrationTestReport', JacocoReport) {
+    dependsOn integrationTest
+    executionData integrationTest.get()
+    sourceSets sourceSets.main
+    reports { xml.required = true }
+}
+check.dependsOn integrationTest

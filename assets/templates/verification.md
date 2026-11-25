@@ -8,6 +8,8 @@
 
 ## 自动化检查
 
+<!-- Java MVC 填写 run、covered/total、漏测、验收场景和 JUnit 标识、UT/合并行覆盖及增量 UT 结果。 -->
+
 <!-- 记录实际执行的测试、构建、lint、类型检查及结果。 -->
 
 ## CodeCheck 门禁

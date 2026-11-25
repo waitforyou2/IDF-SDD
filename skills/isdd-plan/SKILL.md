@@ -42,6 +42,8 @@ description: 为 DEFINED 状态的 xingyun-sdd 变更生成或修订可执行技
    node "${CODEAGENT3_PLUGIN_ROOT}/scripts/sdd.mjs" transition --id <id> --to PLANNED --root "${CLAUDE_PROJECT_DIR}"
    ```
 
+Java Spring MVC 调用 [isdd-api-test plan](../isdd-api-test/SKILL.md)。从调用链识别 Service、配置和 DTO 变更影响的路由；将验收条件、单元测试、REST 操作、场景 ID、真实业务 Bean、出站替身和最终命令写入计划，同时提交 config/isdd/api-plans/<change-id>.json。旧接口新增规则也需验收；纯补测使用覆盖缺口基线；无接口行为变化时记录理由。
+
 ## 完成条件
 
 - 计划描述了经过验证的当前实现。
