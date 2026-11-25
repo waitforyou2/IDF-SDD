@@ -58,6 +58,22 @@ Java 21 Spring MVC 服务可单独复制 [isdd-api-test](skills/isdd-api-test/SK
 
 任何时候运行 `/isdd-status` 查看当前状态和下一条命令。
 
+## 学习模式与 `/isdd-learn`（消除黑盒与能力退化）
+
+`/isdd-define` 确认需求后，会轻量提示是否开启**学习模式**（默认关闭，零打扰）。开启后可任选或同时启用两种能力：
+
+- **检视导览（`review`）**：`/isdd-verify` 通过后由独立只读 Subagent `sdd-learn-guide` 分析 Diff（不污染主会话上下文），通过 `scripts/learn.mjs` 精确回填仓库真实源码并渲染离线单文件「精装代码研读本」HTML（含执行流路线图、默认纯源码 + 行内朱批折页、步进聚光模式、隐藏陷阱盲盒、苏格拉底思考题与一分钟排障急救卡），并持续更新跨仓库个人认知账本 `~/.xingyun-sdd/learning-profile.yaml`。
+- **留白共建（`co-build`）**：`/isdd-plan` 挑出 1–2 个高含金量核心槽位（10–30 行），`/isdd-build` 先由 AI 搭好 90% 样板与红灯单测并留下 `TODO(human)`，开发者亲手写出核心逻辑并由独立导师 Subagent `sdd-cobuild-coach` 做对比点评；亲手编写的代码段会在研读本中获得 **`✦ 亲手共建`** 专属烫金标线。`sdd.mjs` 自动拦截未清理的 `TODO(human)` 防止误提交。
+
+无论是否开启学习模式，随时都可以独立运行 `/isdd-learn` 学习自己的变更或同事的代码：
+
+```bash
+/isdd-learn <change-id>            # 研读 SDD 变更
+/isdd-learn --commit <sha>         # 学习同事或历史任意 Commit
+/isdd-learn --mr <iid>             # 学习 CodeHub 任意 MR（附带评审区点评）
+/isdd-learn --path <目录或文件>     # 存量黑盒模块考古
+```
+
 ## 各阶段说明
 
 ### init — 初始化仓库

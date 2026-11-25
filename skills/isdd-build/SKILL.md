@@ -31,7 +31,16 @@ description: 按依赖顺序逐个垂直切片实现或修复 PLANNED 状态的 
    ```
 
 9. 未获得独立明确授权时，不得 commit、push、创建 PR、merge 或 deploy。
-10. 所有计划任务完成后才能流转：
+10. **留白共建执行协议（仅当 `spec.md` 的 `learning_mode` 为 `co-build` 或 `both` 且 `plan.md` 标记了 `共建槽位：Human` 时触发）**：
+    - AI 先完成 90% 的非共建切片、外围样板、接口定义与覆盖该槽位的失败单测（RED），实际运行确认因目标函数抛出 `TODO(human)` 而精准报红。
+    - 在目标函数内留下清晰的施工单注释（`// TODO(human) [xingyun-sdd co-build: <任务ID>]`，写明目标、2–3 条不变量约束、可用依赖/API 线索及本地单测命令），在纯 CLI 终端输出「施工卡片」（精确 `文件路径:行号` 与单测命令）后暂停等待开发者编码。
+    - 开发者回到终端后支持 4 种交互，其中提示与点评**必须派发独立只读 Subagent `sdd-cobuild-coach`**（避免污染主会话上下文）：
+      - `hint` / `hint 2` / `ask <问题>`：由 `sdd-cobuild-coach` 提供方向线索或伪代码骨架，绝不直接剧透最终代码。
+      - `takeover`：开发者临时没空时由 AI 接管补全，并简述实现差异。
+      - `done` / `check`：AI 运行对应单测；未通过时只把失败原因翻译成人话并指向对应代码行，让开发者自行修到绿灯；转绿后派发 `sdd-cobuild-coach` 输出「黄金 2 分钟」对比点评（肯定亮点 + 最多 1–2 条改进 + 精简对照 Diff），由开发者自主决定保留原写法、自行微调或采纳优化。
+    - 完成后，将开发者亲手编写的文件路径及精确行号写入 `.isdd-learn/<id>/cobuild-lines.json`（供后续研读本自动渲染 `✦ 亲手共建` 烫金标线），并调用 `scripts/learn.mjs sync` 将本次实操知识点升级为 `practiced` 级别写入 `~/.xingyun-sdd/learning-profile.yaml`。
+    - 流转到 `BUILT` 时，`sdd.mjs` 会自动扫描实现文件，若仍残留任何 `TODO(human)` 标记将被硬门禁拦截。
+11. 所有计划任务完成后才能流转：
 
    ```bash
    node "${CODEAGENT3_PLUGIN_ROOT}/scripts/sdd.mjs" transition --id <id> --to BUILT --root "${CLAUDE_PROJECT_DIR}"

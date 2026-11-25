@@ -60,7 +60,7 @@ check(!hooksRaw.includes('CLAUDE_PLUGIN_ROOT'), 'hooks.json must not use ${CLAUD
 check(hooksRaw.includes('CODEAGENT3_PLUGIN_ROOT'), 'hooks.json must reference ${CODEAGENT3_PLUGIN_ROOT}');
 
 // 8. skills（isdd-* 技能 + security-audit 技能）
-const expectedSkills = ['isdd-init', 'isdd-define', 'isdd-plan', 'isdd-build', 'isdd-verify', 'isdd-ship', 'isdd-status', 'isdd-abandon', 'isdd-api-test', 'security-audit'];
+const expectedSkills = ['isdd-init', 'isdd-define', 'isdd-plan', 'isdd-build', 'isdd-verify', 'isdd-ship', 'isdd-status', 'isdd-abandon', 'isdd-api-test', 'isdd-learn', 'security-audit'];
 for (const name of expectedSkills) {
   const file = path.join(ROOT, 'skills', name, 'SKILL.md');
   check(fs.existsSync(file), `Missing skill: ${name}`);
@@ -78,12 +78,13 @@ for (const name of expectedSkills) {
   }
 }
 
-// 9. agents（2 个只读审查智能体）
+// 9. agents（4 个只读审查与学习智能体）
 for (const file of ['scripts/api_test.py', 'scripts/coverage.py', 'assets/ApiEvidence.java',
   'references/setup.md', 'references/scenarios.md']) {
   check(fs.existsSync(path.join(ROOT, 'skills/isdd-api-test', file)), `Missing standalone API test resource: ${file}`);
 }
-const expectedAgents = ['sdd-spec-reviewer', 'sdd-quality-reviewer'];
+check(fs.existsSync(path.join(ROOT, 'assets', 'learn', 'template.html')), 'Missing offline learning template: assets/learn/template.html');
+const expectedAgents = ['sdd-spec-reviewer', 'sdd-quality-reviewer', 'sdd-learn-guide', 'sdd-cobuild-coach'];
 for (const name of expectedAgents) {
   const file = path.join(ROOT, 'agents', `${name}.md`);
   check(fs.existsSync(file), `Missing review agent: ${name}`);
@@ -95,7 +96,7 @@ for (const name of expectedAgents) {
 check(!fs.existsSync(path.join(ROOT, 'agents', 'sdd-reviewer.md')), 'Legacy combined reviewer must not remain');
 
 // 10. scripts 语法检查和 help
-for (const script of ['sdd.mjs', 'session-start.mjs']) {
+for (const script of ['sdd.mjs', 'session-start.mjs', 'learn.mjs']) {
   const file = path.join(ROOT, 'scripts', script);
   const result = spawnSync(process.execPath, ['--check', file], { encoding: 'utf8' });
   check(result.status === 0, `${script} syntax check failed: ${(result.stderr || '').trim()}`);
@@ -103,6 +104,8 @@ for (const script of ['sdd.mjs', 'session-start.mjs']) {
 
 const help = spawnSync(process.execPath, [path.join(ROOT, 'scripts', 'sdd.mjs'), 'help'], { encoding: 'utf8' });
 check(help.status === 0, `sdd.mjs help failed: ${(help.stderr || '').trim()}`);
+const learnHelp = spawnSync(process.execPath, [path.join(ROOT, 'scripts', 'learn.mjs'), 'help'], { encoding: 'utf8' });
+check(learnHelp.status === 0, `learn.mjs help failed: ${(learnHelp.stderr || '').trim()}`);
 
 // 11. 许可说明
 check(fs.existsSync(path.join(ROOT, 'THIRD_PARTY_NOTICES.md')), 'Missing THIRD_PARTY_NOTICES.md');

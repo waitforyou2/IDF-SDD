@@ -138,8 +138,19 @@ test('README 说明社区复用、适配边界和许可', () => {
   ], '第三方许可说明');
 });
 
+test('学习模式贯穿 define/plan/build/verify 且严格使用独立 Subagent 隔离上下文', () => {
+  includesAll(skill('isdd-define'), ['学习模式', 'learning-mode', '检视导览', '留白共建'], 'define 学习模式');
+  includesAll(skill('isdd-plan'), ['共建槽位', 'co-build'], 'plan 共建选点');
+  includesAll(skill('isdd-build'), ['TODO(human)', 'sdd-cobuild-coach', 'cobuild-lines.json', 'practiced'], 'build 共建协议');
+  includesAll(skill('isdd-verify'), ['isdd-learn', 'sdd-learn-guide', '亲手共建'], 'verify 衔接导览');
+  includesAll(skill('isdd-learn'), ['sdd-learn-guide', 'scripts/learn.mjs', '--commit', '--mr', '--sync', 'humanLines'], 'isdd-learn 独立技能');
+  assert.ok(fs.existsSync(path.join(PLUGIN_ROOT, 'agents', 'sdd-learn-guide.md')));
+  assert.ok(fs.existsSync(path.join(PLUGIN_ROOT, 'agents', 'sdd-cobuild-coach.md')));
+  includesAll(read('assets/templates/spec.md'), ['learning_mode:'], 'spec 模板');
+});
+
 test('全部面向智能体的工作流文档使用中文说明', () => {
-  const skillNames = ['isdd-init', 'isdd-define', 'isdd-plan', 'isdd-build', 'isdd-verify', 'isdd-ship', 'isdd-status', 'security-audit'];
+  const skillNames = ['isdd-init', 'isdd-define', 'isdd-plan', 'isdd-build', 'isdd-verify', 'isdd-ship', 'isdd-status', 'isdd-learn', 'security-audit'];
   for (const name of skillNames) {
     const content = skill(name);
     assert.match(content, /^description:\s*[^\n]*[\u4e00-\u9fff]/m, `${name} 的触发描述必须为中文`);

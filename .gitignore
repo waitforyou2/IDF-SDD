@@ -13,6 +13,7 @@ Thumbs.db
 
 # 本地 CodeGraph 索引（可重建缓存）
 .codegraph/
+.isdd-learn/
 
 # xingyun-sdd 本地辅助文档（每次 init 重新生成）
 docs/isdd/repository.md

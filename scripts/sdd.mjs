@@ -30,6 +30,8 @@ const STATES = [
   'ABANDONED'
 ];
 
+const LEARNING_MODES = ['off', 'review', 'co-build', 'both'];
+
 const ALLOWED_TRANSITIONS = new Map([
   ['DRAFT', new Set(['DEFINED'])],
   ['DEFINED', new Set(['PLANNED'])],
@@ -174,6 +176,7 @@ function serializeFrontmatter(metadata, body) {
     'title',
     'state',
     'mode',
+    'learning_mode',
     'workflow_version',
     'created_at',
     'updated_at',
@@ -576,6 +579,10 @@ function ensureGitignore(root) {
     appendBlock('# 本地 CodeGraph 索引（可重建缓存）\n.codegraph/');
     changed = true;
   }
+  if (!lines.includes('.isdd-learn/') && !lines.includes('/.isdd-learn/')) {
+    appendBlock('# xingyun-sdd 本地研读本与学习缓存（不提交）\n.isdd-learn/');
+    changed = true;
+  }
   const localDocs = ['docs/isdd/repository.md', 'docs/isdd/repository.yaml', 'docs/isdd/policy.md']
     .filter((doc) => !lines.includes(doc));
   if (localDocs.length > 0) {
@@ -713,6 +720,8 @@ function createChange(root, flags) {
   if (!title) fail('change create 必须提供 --title。');
   const mode = String(flags.mode || 'standard').toLowerCase();
   if (!['lite', 'standard', 'strict'].includes(mode)) fail('模式必须是 lite、standard 或 strict。');
+  const learningMode = String(flags['learning-mode'] || 'off').toLowerCase();
+  if (!LEARNING_MODES.includes(learningMode)) fail('学习模式必须是 off、review、co-build 或 both。');
   const id = flags.id ? safeId(flags.id) : uniqueGeneratedId(root, title);
   const directory = changeDirectory(root, id);
   if (fs.existsSync(directory)) fail(`变更已存在：${id}`);
@@ -724,6 +733,7 @@ function createChange(root, flags) {
     ID: id,
     TITLE: title,
     MODE: mode,
+    LEARNING_MODE: learningMode,
     CREATED_AT: now,
     UPDATED_AT: now,
     BASE_REF: baseRef,
@@ -734,6 +744,7 @@ function createChange(root, flags) {
     action: 'change-create',
     id,
     mode,
+    learning_mode: learningMode,
     e2e_issue: e2eIssue || null,
     state: 'DRAFT',
     directory,
@@ -766,7 +777,48 @@ function normalizedGitPath(file) {
 
 function excludedFingerprintPath(file) {
   const normalized = normalizedGitPath(file);
-  return normalized === 'docs/isdd' || normalized.startsWith('docs/isdd/') || normalized === '.codegraph' || normalized.startsWith('.codegraph/');
+  return (
+    normalized === 'docs/isdd' ||
+    normalized.startsWith('docs/isdd/') ||
+    normalized === '.codegraph' ||
+    normalized.startsWith('.codegraph/') ||
+    normalized === '.isdd-learn' ||
+    normalized.startsWith('.isdd-learn/')
+  );
+}
+
+/**
+ * 扫描变更范围内的实现文件，阻止未完成的 Co-Build TODO(human) 标记泄漏进 BUILT / VERIFIED
+ */
+function findUnfinishedHumanTodos(root, baseRef) {
+  let changed = [];
+  if (baseRef && baseRef !== 'unborn') {
+    const refCheck = run('git', ['cat-file', '-t', baseRef], { cwd: root, timeout: 15_000 });
+    if (refCheck.status === 0) {
+      changed = gitLines(root, ['diff', '--name-only', '--diff-filter=ACDMRTUXB', baseRef, '--']);
+    }
+  } else {
+    changed = gitLines(root, ['ls-files']);
+  }
+  const untracked = gitLines(root, ['ls-files', '--others', '--exclude-standard']);
+  const files = [...new Set([...changed, ...untracked].map(normalizedGitPath))]
+    .filter((file) => !excludedFingerprintPath(file))
+    .sort((a, b) => a.localeCompare(b));
+
+  const hits = [];
+  for (const relative of files) {
+    const absolute = path.resolve(root, relative);
+    if (!fs.existsSync(absolute) || !fs.statSync(absolute).isFile()) continue;
+    const buffer = fs.readFileSync(absolute);
+    if (buffer.includes(0)) continue; // 跳过二进制文件
+    const lines = buffer.toString('utf8').split(/\r?\n/);
+    for (let idx = 0; idx < lines.length; idx += 1) {
+      if (/\bTODO\(human\)/i.test(lines[idx])) {
+        hits.push(`${relative}:${idx + 1}: ${lines[idx].trim().slice(0, 120)}`);
+      }
+    }
+  }
+  return hits;
 }
 
 function gitLines(root, args) {
@@ -1018,6 +1070,12 @@ function transition(root, flags) {
   }
 
   let receipt;
+  if (target === 'BUILT' || target === 'VERIFIED') {
+    const humanTodoHits = findUnfinishedHumanTodos(root, change.metadata.base_ref);
+    if (humanTodoHits.length > 0) {
+      fail('检测到未完成的 Co-Build 留白标记 TODO(human)，请完成实现或由 AI 接管后再推进状态。', humanTodoHits);
+    }
+  }
   if ((target === 'PLANNED' && current === 'DEFINED' || target === 'BUILT') && apiTestApplies(root, change))
     apiReceipt(root, change, 'plan-check');
   if ((target === 'VERIFIED' || target === 'DONE') && apiTestApplies(root, change)) {
@@ -1108,6 +1166,7 @@ function status(root, flags) {
         title: change.metadata.title,
         state: change.metadata.state,
         mode: change.metadata.mode,
+        learning_mode: change.metadata.learning_mode || 'off',
         blocked: change.metadata.blocked === 'true',
         block_reason: change.metadata.block_reason,
         delivery_ref: change.metadata.delivery_ref,
@@ -1195,13 +1254,28 @@ function abandon(root, flags) {
   emit({ ok: true, action: 'abandon', id, state: 'ABANDONED', reason: change.metadata.block_reason });
 }
 
+function setLearningMode(root, flags) {
+  requireInitialized(root);
+  const id = safeId(flags.id);
+  const mode = String(flags.mode || '').toLowerCase();
+  if (!LEARNING_MODES.includes(mode)) {
+    fail('学习模式必须是 off、review、co-build 或 both。', { allowed: LEARNING_MODES });
+  }
+  const change = loadChange(root, id);
+  change.metadata.learning_mode = mode;
+  change.metadata.updated_at = isoNow();
+  writeText(change.file, serializeFrontmatter(change.metadata, change.body));
+  emit({ ok: true, action: 'learning-mode', id, learning_mode: mode });
+}
+
 function help() {
   emit({
     ok: true,
     commands: {
       init: 'init [--root <path>] [--skip-codegraph] [--force]',
       classify: 'classify --text <request> [--files <n>] [--impact low|medium|high]',
-      change_create: 'change create --title <title> [--id <id>] [--mode lite|standard|strict] [--e2e <E2E单号>]',
+      change_create: 'change create --title <title> [--id <id>] [--mode lite|standard|strict] [--learning-mode off|review|co-build|both] [--e2e <E2E单号>]',
+      learning_mode: 'learning-mode --id <id> --mode <off|review|co-build|both>',
       artifact: 'artifact <plan|verification|delivery> --id <id>',
       transition: 'transition --id <id> --to <state> [--delivery-ref <ref>]',
       block: 'block --id <id> --reason <reason>',
@@ -1226,6 +1300,9 @@ switch (command) {
   case 'change':
     if (positionals[0] !== 'create') fail('change 目前仅支持 create 子命令。');
     createChange(root, flags);
+    break;
+  case 'learning-mode':
+    setLearningMode(root, flags);
     break;
   case 'artifact':
     createArtifact(root, positionals[0], flags);

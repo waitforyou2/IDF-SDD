@@ -73,6 +73,7 @@ description: 将需求符合度和工程质量作为两个独立审查轴，使�
    ```
 
 12. 变更已在 `VERIFIED` 状态但实现文件在验证后发生了合法修改（如评审反馈的修复、文档订正）时，直接重新执行完整验证流程并再次流转到 `VERIFIED`。工具会重算指纹，无需先回退到 `BUILT`。必须重新运行所有要求命令并更新证据，不得只刷新指纹而跳过审查。
+13. **学习模式自动衔接（仅当 `spec.md` 的 `learning_mode` 为 `review` 或 `both` 时触发）**：流转到 `VERIFIED` 成功后，自动衔接 [isdd-learn](../isdd-learn/SKILL.md) 流程（`/isdd-learn <id>`），派发独立只读 Subagent `sdd-learn-guide` 生成离线精装代码研读本（含 Co-Build 亲手共建行的 `✦ 亲手共建` 烫金标记）、排障急救卡与苏格拉底反向检视。若用户未开启学习模式（`off`），跳过此步。
 
 ## 完成条件
 

@@ -64,7 +64,20 @@ description: 定义或修订一项 xingyun-sdd 变更，将问题、范围、非
    node "${CODEAGENT3_PLUGIN_ROOT}/scripts/sdd.mjs" transition --id <id> --to DEFINED --root "${CLAUDE_PROJECT_DIR}"
    ```
 
-13. 用户提供 `--auto` 时，仅当最终模式为 lite 才继续。依次遵守 `plan`、`build` 和 `verify` Skill 契约，创建全部归档，并在 ship 或任何外部发布前停止。非 lite 模式忽略自动执行并说明原因。
+13. **学习模式轻量询问（默认关闭，零打扰）**：流转到 `DEFINED` 完成后，在回复末尾用一句话向用户介绍学习模式的优势并询问是否开启：
+    > “需求已定义完成。是否开启**学习模式**（帮你边 Review 吃透 AI 写的核心设计巧思与新 API、告别黑盒排障焦虑，还可选择亲手共建核心 15 行代码保持手感；默认不开启，直接执行 `/isdd-plan <id>` 即可继续）？”
+    - 若用户不开启或直接进入 `/isdd-plan`：保持默认的 `learning_mode: "off"`，不打断流程。
+    - 若用户选择开启，展示两种子模式供单选或双选：
+      1. **检视导览（`review`）**：验证完成后由独立 Subagent 生成高颜值离线精装代码研读本、排障急救卡与 2–3 题苏格拉底反向检视；
+      2. **留白共建（`co-build`）**：规划时由你挑 1–2 个高含金量核心槽位（10–30 行），AI 先搭好 90% 样板与红灯测试，你亲手写核心逻辑后由独立导师 Subagent 对比点评；
+      3. **两者都开（`both`）**：共建 + 精装研读本（研读本中会自动给你亲手写的代码行打上 `✦ 亲手共建` 专属烫金标记）。
+    - 用户选定后，通过插件脚本写入 `spec.md` frontmatter（不得手工修改）：
+
+    ```bash
+    node "${CODEAGENT3_PLUGIN_ROOT}/scripts/sdd.mjs" learning-mode --id <id> --mode <review|co-build|both> --root "${CLAUDE_PROJECT_DIR}"
+    ```
+
+14. 用户提供 `--auto` 时，仅当最终模式为 lite 才继续。依次遵守 `plan`、`build` 和 `verify` Skill 契约，创建全部归档，并在 ship 或任何外部发布前停止。非 lite 模式忽略自动执行并说明原因。
 
 Java REST 需求列出调用方可观察结果与关键副作用，供 plan 建立稳定场景。存量治理注明审批范围和全服务覆盖目标。
 
